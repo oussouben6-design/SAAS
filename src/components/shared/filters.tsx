@@ -113,6 +113,18 @@ const TONES: Record<string, { className: string; label?: string }> = {
   rejected: { className: "bg-danger-soft text-danger", label: "Rejeté" },
   suspended: { className: "bg-danger-soft text-danger", label: "Suspendu" },
   invited: { className: "bg-accent text-accent-foreground", label: "Invité" },
+  draft: { className: "bg-muted text-muted-foreground", label: "Brouillon" },
+  sent: { className: "bg-accent text-accent-foreground", label: "Envoyé" },
+  partial: { className: "bg-warning-soft text-warning", label: "Partiel" },
+  paid: { className: "bg-success-soft text-success", label: "Payé" },
+  overdue: { className: "bg-danger-soft text-danger", label: "En retard" },
+  accepted: { className: "bg-success-soft text-success", label: "Accepté" },
+  expired: { className: "bg-muted text-muted-foreground", label: "Expiré" },
+  present: { className: "bg-success-soft text-success", label: "Présent" },
+  late: { className: "bg-warning-soft text-warning", label: "En retard" },
+  leave: { className: "bg-accent text-accent-foreground", label: "Congé" },
+  remote: { className: "bg-accent text-accent-foreground", label: "Télétravail" },
+  absent: { className: "bg-danger-soft text-danger", label: "Absent" },
 };
 
 export function StatusBadge({

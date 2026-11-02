@@ -25,7 +25,7 @@ export function ModuleComingSoon({
       <PageHeader
         title={title}
         description={description}
-        badge={<Badge variant="warning">En développement</Badge>}
+        badge={<Badge variant="warning">Non disponible</Badge>}
       />
 
       <Alert variant="warning" title="Ce module n'est pas encore utilisable">

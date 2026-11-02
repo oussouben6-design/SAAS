@@ -76,7 +76,7 @@ export function AuthShell({
           </ul>
         </div>
         <p className="relative text-xs text-sidebar-muted">
-          ORGANIX — version pilote. Les modules non finalisés sont signalés « En développement ».
+          ORGANIX — version pilote. Les modules non disponibles sont signalés comme tels.
         </p>
       </div>
 

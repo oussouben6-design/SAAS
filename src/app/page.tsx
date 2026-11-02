@@ -141,7 +141,7 @@ export default async function LandingPage() {
               </div>
               <div className="absolute -bottom-4 -right-2 hidden rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-lg sm:block">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <Lock className="size-3.5 text-success" /> RLS active sur 45 tables
+                  <Lock className="size-3.5 text-success" /> RLS active sur 46 tables
                 </span>
               </div>
             </div>
@@ -154,8 +154,8 @@ export default async function LandingPage() {
               <h2 className="text-2xl font-semibold tracking-tight">Une plateforme modulaire</h2>
               <p className="text-sm text-muted-foreground">
                 Activez uniquement les modules utiles. Chaque module possède ses propres tables,
-                permissions et règles métier. Les modules en cours de développement sont identifiés comme
-                tels dans l&apos;application.
+                permissions et règles métier. Les modules non disponibles (assistant IA) sont signalés
+                comme tels dans l&apos;application.
               </p>
             </div>
             <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -164,7 +164,7 @@ export default async function LandingPage() {
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold">{module.label}</p>
                     {module.status === "development" ? (
-                      <Badge variant="warning">En développement</Badge>
+                      <Badge variant="warning">Non disponible</Badge>
                     ) : (
                       <Badge variant="success">Disponible</Badge>
                     )}

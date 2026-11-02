@@ -11,6 +11,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  /**
+   * Hôtes autorisés à demander les ressources de développement (aperçus distants).
+   * En production, le build n'utilise pas ce réglage.
+   */
+  allowedDevOrigins: ["*.e2b.app", "*.arena.ai", "localhost", "127.0.0.1"],
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   experimental: {
     serverActions: {

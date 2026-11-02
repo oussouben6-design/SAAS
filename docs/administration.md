@@ -49,7 +49,7 @@ l'organisation des annonces.
 **Paramètres → Modules.** Activez ou désactivez les modules de votre organisation. Un module
 désactivé disparaît de la navigation **et** son accès direct affiche une page explicative ; les
 données existantes sont conservées. Les modules RH, Finances, Partenaires, Communication et IA sont
-livrés désactivables mais marqués « En développement » : les activer n'ajoute pas de
+livrés complets et désactivables : les désactiver retire l'accès sans supprimer les données. Les activer n'ajoute pas de
 fonctionnalités d'écriture.
 
 ## Journal d'audit

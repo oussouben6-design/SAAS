@@ -39,26 +39,45 @@ une nouvelle.
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `MAIL_TRANSPORT` | `console` | `console` (journalise le lien), `none`, `smtp`, `resend` |
-| `MAIL_FROM` | `ORGANIX <no-reply@organix.local>` | Expéditeur |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | — | **Non implémentés** : `smtp` lève une erreur explicite |
-| `RESEND_API_KEY` | — | **Non implémenté** |
+| `MAIL_TRANSPORT` | `console` | `console` (journalise le lien), `none`, `resend` (envoi réel), `smtp` (non implémenté) |
+| `MAIL_FROM` | — | Expéditeur vérifié (ex. `ORGANIX <no-reply@votre-domaine>`), requis pour `resend` |
+| `RESEND_API_KEY` | — | Clé API Resend, requise pour `resend` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | — | **Non implémenté** : `smtp` renvoie un avertissement explicite |
 
-État réel : seul `console` fonctionne. Les liens d'invitation et de réinitialisation sont écrits
-dans la console du serveur ; en production il faut brancher un transport (mission dédiée) ou copier
-le lien manuellement.
+État réel :
+- `console` : les liens d'invitation, de vérification et de réinitialisation sont journalisés côté
+  serveur (et affichés dans l'interface en développement). Aucun e-mail n'est envoyé.
+- `resend` : appel HTTP direct à `https://api.resend.com/emails` (aucun SDK). Le plan gratuit
+  Resend (3 000 e-mails/mois) suffit pour une petite organisation. **Non vérifié contre un compte
+  réel** dans cet environnement (pas de clé, pas de réseau sortant vers Resend) : la forme de la
+  requête est couverte par des tests unitaires avec `fetch` simulé.
+- En cas d'échec (clé absente, HTTP 4xx/5xx, réseau), `sendMail` renvoie `delivered: false` et un
+  message d'erreur réel : l'application n'affiche **jamais** un faux succès d'envoi.
+
+Procédure d'activation : créer un compte Resend, vérifier le domaine d'envoi, renseigner
+`RESEND_API_KEY` et `MAIL_FROM`, puis `MAIL_TRANSPORT=resend`. Activer ensuite
+`AUTH_REQUIRE_EMAIL_VERIFICATION=true` si la vérification d'adresse est souhaitée.
 
 ## Stockage des documents
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `STORAGE_DRIVER` | `local` | `local` (fonctionne) ou `supabase` (non implémenté, erreur explicite) |
-| `ORGANIX_STORAGE_DIR` | `.data/storage` | Répertoire privé des fichiers |
+| `STORAGE_DRIVER` | `local` | `local` (disque privé) ou `supabase` (bucket privé via API REST) |
+| `ORGANIX_STORAGE_DIR` | `.data/storage` | Répertoire privé des fichiers (mode `local`) |
+| `SUPABASE_URL` | — | URL du projet Supabase, requis pour le mode `supabase` |
+| `SUPABASE_SERVICE_ROLE_KEY` | — | Clé service_role (serveur uniquement), requis pour `supabase` |
+| `SUPABASE_STORAGE_BUCKET` | `documents` | Bucket **privé** à créer dans Supabase Storage |
 | `MAX_UPLOAD_BYTES` | `10485760` (10 Mio) | Taille maximale par fichier |
 
-Le répertoire de stockage doit être **persistant et sauvegardé** (volume) : il n'est pas dans Git.
-Un stockage objet (S3/Supabase Storage) est prévu en phase 5 ; les chemins sont déjà normalisés
-(`<organisation>/<document>-<nom>`).
+Mode `local` : le répertoire doit être **persistant et sauvegardé** (volume) ; il n'est pas dans Git.
+Les chemins sont normalisés (`<organisation>/<document>-<nom>`) et toute tentative de sortie du
+répertoire est refusée.
+
+Mode `supabase` : les fichiers sont écrits, lus et supprimés via l'API REST de Storage avec la clé
+service_role ; le bucket reste **privé** (aucune URL publique, la lecture passe par le serveur
+ORGANIX qui vérifie les permissions `documents:read`). **Non vérifié contre un projet Supabase réel**
+dans cet environnement (pas de réseau sortant) : la requête est couverte par des tests unitaires avec
+`fetch` simulé. Toute erreur (HTTP, configuration incomplète) est remontée à l'utilisateur.
 
 ## Assistant IA (facultatif, non développé)
 

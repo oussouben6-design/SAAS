@@ -104,7 +104,7 @@ main (composants écrits et maîtrisés), fournisseur d'authentification externe
 | --- | --- | --- |
 | **1 — Socle** | Architecture, design system, schéma noyau, rôles/permissions, authentification, onboarding, organisation, équipe, audit | **Réalisée** (vérifiée par tests) |
 | **2 — Opérations** | Tableau de bord, CRM, prospection, projets, tâches, documents, rapports, recherche, notifications | **Réalisée** pour l'essentiel (voir `PROJECT_STATUS.md`) |
-| **3 — Support** | RH, finances, partenaires, communication | **Schéma + permissions réalisés ; interface à développer** (pages « En développement ») |
+| **3 — Support** | RH, finances, partenaires, communication | **Réalisé** : écrans, actions, validations, exports (périmètres limités : pas de paie, pas de comptabilité certifiée, pas de messagerie) |
 | **4 — Pilotage avancé** | Rapports avancés, assistant IA | Rapports de base réalisés ; IA **non commencée** (accord explicite requis) |
 | **5 — SaaS** | Multi-organisations exploité, facturation, quotas, self-service | Schéma prêt ; fonctionnalités SaaS **non commencées** |
 

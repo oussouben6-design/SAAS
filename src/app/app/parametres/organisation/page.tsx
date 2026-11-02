@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Building2, Plus, Trash2 } from "lucide-react";
-import { requirePagePermission, can } from "@/lib/server/context";
+import { requirePagePermission, can, listMemberships } from "@/lib/server/context";
 import { getOrganization, listDepartments } from "@/modules/organization/service";
 import { EmptyState, Alert } from "@/components/ui/misc";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FormField, Input, NativeSelect, Textarea } from "@/components/ui/input";
 import { FormDialog, InlineForm } from "@/components/forms/form-dialog";
 import { ConfirmDialog } from "@/components/forms/confirm-dialog";
-import { createDepartmentAction, deleteDepartmentAction, updateOrganizationAction } from "@/modules/organization/actions";
+import {
+  createDepartmentAction,
+  deleteDepartmentAction,
+  switchOrganizationAction,
+  updateOrganizationAction,
+} from "@/modules/organization/actions";
+import { createOrganizationAction } from "@/app/onboarding/actions";
 import { CURRENCIES, TIMEZONES } from "@/lib/validation/organization";
 import { formatDateTime } from "@/lib/utils";
 
@@ -19,6 +25,7 @@ export default async function OrganizationSettingsPage() {
   const orgCtx = { userId: context.user.id, organizationId: context.organization!.id };
   const organization = await getOrganization(orgCtx.userId, orgCtx.organizationId);
   const departments = await listDepartments(orgCtx);
+  const memberships = await listMemberships(context.user.id);
   const canUpdate = can(context, "organization", "update");
   const canAdminister = can(context, "organization", "administer");
 
@@ -210,6 +217,111 @@ export default async function OrganizationSettingsPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="size-4" /> Mes organisations
+            </CardTitle>
+            <CardDescription>
+              Vous êtes membre de {memberships.length} organisation(s). L&apos;organisation active
+              détermine les données affichées et les permissions appliquées.
+            </CardDescription>
+          </div>
+          <FormDialog
+            trigger={
+              <Button variant="outline">
+                <Plus /> Créer une organisation
+              </Button>
+            }
+            title="Créer une organisation"
+            description="Vous en devenez propriétaire avec le rôle Administrateur, avec les mêmes identifiants de connexion."
+            action={createOrganizationAction}
+            submitLabel="Créer et basculer"
+          >
+            <FormField label="Nom de l'organisation" htmlFor="new-org-name" required>
+              <Input id="new-org-name" name="name" required maxLength={120} />
+            </FormField>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="Secteur" htmlFor="new-org-industry">
+                <Input id="new-org-industry" name="industry" maxLength={120} />
+              </FormField>
+              <FormField label="Pays" htmlFor="new-org-country">
+                <Input id="new-org-country" name="country" maxLength={80} />
+              </FormField>
+              <FormField label="Ville" htmlFor="new-org-city">
+                <Input id="new-org-city" name="city" maxLength={80} />
+              </FormField>
+              <FormField label="Devise" htmlFor="new-org-currency">
+                <NativeSelect id="new-org-currency" name="currency" defaultValue="XOF">
+                  {CURRENCIES.map((currency) => (
+                    <option key={currency} value={currency}>
+                      {currency}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </FormField>
+              <FormField label="Fuseau horaire" htmlFor="new-org-timezone">
+                <NativeSelect id="new-org-timezone" name="timezone" defaultValue="Africa/Niamey">
+                  {TIMEZONES.map((timezone) => (
+                    <option key={timezone} value={timezone}>
+                      {timezone}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </FormField>
+              <FormField label="Langue" htmlFor="new-org-language">
+                <NativeSelect id="new-org-language" name="language" defaultValue="fr">
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                </NativeSelect>
+              </FormField>
+            </div>
+          </FormDialog>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {memberships.map((membership) => {
+              const isActive = membership.organization_id === context.organization!.id;
+              return (
+                <div
+                  key={membership.organization_id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {membership.name}
+                      {isActive ? (
+                        <span className="ml-2 rounded-full bg-success-soft px-2 py-0.5 text-[11px] font-semibold text-success">
+                          Active
+                        </span>
+                      ) : null}
+                      {membership.is_demo ? (
+                        <span className="ml-2 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-semibold text-warning">
+                          Démo
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {membership.slug} · {membership.currency} · {membership.timezone}
+                    </p>
+                  </div>
+                  {isActive ? null : (
+                    <InlineForm
+                      action={switchOrganizationAction}
+                      submitLabel="Activer"
+                      successMessage="Organisation active changée."
+                    >
+                      <input type="hidden" name="organizationId" value={membership.organization_id} />
+                    </InlineForm>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>

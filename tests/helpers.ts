@@ -66,3 +66,33 @@ export async function createTestActor(
 export function contextOf(actor: TestActor) {
   return { userId: actor.userId, organizationId: actor.organizationId };
 }
+
+/** Ajoute un membre actif avec un rôle donné dans une organisation existante. */
+export async function addMemberWithRole(
+  organizationId: string,
+  roleKey: string,
+  options: { fullName?: string } = {},
+): Promise<{ userId: string; email: string; password: string }> {
+  const email = `membre-${roleKey}-${Date.now()}-${Math.round(Math.random() * 1e6)}@organix.test`;
+  const password = "MotDePasseTest2026";
+  const created = await createUserAccount({
+    email,
+    fullName: options.fullName ?? `Membre ${roleKey}`,
+    password,
+    emailVerified: true,
+  });
+  if (!created.ok) throw new Error(created.message);
+  await privileged(async (tx) => {
+    const member = await tx.query<{ id: string }>(
+      `insert into organization_members (organization_id, user_id, status, joined_at)
+       values ($1, $2, 'active', now()) returning id`,
+      [organizationId, created.data.user.id],
+    );
+    await tx.query(
+      `insert into member_roles (member_id, role_id)
+       select $1, id from roles where organization_id = $2 and key = $3`,
+      [member[0]!.id, organizationId, roleKey],
+    );
+  });
+  return { userId: created.data.user.id, email, password };
+}

@@ -87,25 +87,72 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
 
 ## Paramètres
 
-- **Organisation** : identité, devise, fuseau, langue, départements.
+- **Organisation** : identité, devise, fuseau, langue, départements, **liste de vos organisations
+  et bascule d'organisation active**, création d'une organisation supplémentaire.
 - **Équipe** : invitations, rôles, départements, suspension.
 - **Rôles & permissions** : matrice par module/action ; le rôle propriétaire est verrouillé.
 - **Modules** : activation/désactivation par module.
 - **Profil** : nom, téléphone, intitulé, fuseau, changement de mot de passe (révoque les autres
   sessions).
 
-## Modules « En développement »
+## Finances (`/app/finances`)
 
-Ces pages existent, sont protégées par les permissions, et **indiquent clairement qu'elles ne sont
-pas utilisables** : elles n'affichent aucune liste, aucun chiffre, aucun bouton d'action factice.
+Onglets : **Factures**, **Devis**, **Dépenses**, **Recettes**, **Catégories**.
+
+- **Devis** : création avec une première ligne, ajout de lignes, statuts `brouillon → envoyé →
+  accepté/refusé/expiré`. Un devis accepté se transforme en **facture brouillon** (une seule fois).
+- **Factures** : numérotation automatique `FAC-AAAA-NNNN`, lignes, TVA en taux, totaux HT/TVA/TTC
+  recalculés côté serveur. Cycle : `brouillon → envoyée → (partielle) → payée` ou `annulée`.
+  Une facture payée ou annulée est **verrouillée**.
+- **Encaissements** : montant plafonné au solde restant, moyen de paiement, référence. Un
+  encaissement crée automatiquement une **recette** liée. Le statut de la facture se déduit des
+  paiements (jamais saisi à la main pour « payée »).
+- **Dépenses** : saisie avec justificatif texte, validation ou refus par un **autre** utilisateur
+  (auto-validation interdite). Une dépense validée ne peut plus être supprimée.
+- **Exports CSV** (`finance:export`) : factures, devis, dépenses, recettes.
+
+> ⚠️ Ce module **n'est pas une comptabilité certifiée** : pas de lettrage bancaire, pas de
+> déclaration de TVA, pas de conformité fiscale garantie.
+
+## Ressources humaines (`/app/rh`)
+
+Onglets : **Employés**, **Congés**, **Présences**.
+
+- **Dossiers employés** : identité, poste, département, manager, type de contrat, dates, statut
+  (actif, en congé, suspendu, sorti), **salaire de référence** (montant indicatif, hors charges).
+  Archivage logique via la fiche détaillée.
+- **Fiche employé** : édition, contrats (référence, type, période, salaire, signature), congés,
+  présences, actions rapides de statut.
+- **Congés** : demande (type, période, nombre de jours), **refus des chevauchements**, validation ou
+  refus avec commentaire. L'approbation bascule l'employé « en congé ».
+- **Présences** : une ligne par employé et par jour (`présent`, `absent`, `retard`, `congé`,
+  `télétravail`), heures d'arrivée/départ.
+- **Export CSV** (`hr:export`).
+
+> ⚠️ **Aucune paie n'est calculée** : ni bulletin de salaire, ni cotisations, ni déclaration
+> sociale. Le salaire de référence sert uniquement d'indication.
+
+## Partenaires (`/app/partenaires`)
+
+- Liste filtrable (type, statut, recherche) : fournisseurs, institutions, distributeurs, ONG.
+- Fiche partenaire : coordonnées, notes internes, **contacts** (un seul contact principal à la
+  fois), **conventions** (référence, période validée, statut).
+- Archivage logique du partenaire (les conventions restent en base et l'action est journalisée).
+
+## Communication (`/app/communication`)
+
+- **Annonces** : publication avec audience (**toute l'organisation**, **un département**,
+  **administrateurs uniquement**), épinglage en tête, date d'expiration. Le filtrage par audience
+  est appliqué en base (RLS) : un collaborateur ne voit pas les annonces qui ne le concernent pas.
+- **Calendrier** : événements partagés (titre, début/fin, lieu, journée entière, projet lié,
+  visibilité organisation/département/privé).
+- **Pas de messagerie instantanée** ni de notifications temps réel : hors périmètre de cette étape.
+
+## Modules « En développement »
 
 | Module | Ce qui existe réellement | Ce qui reste à faire |
 | --- | --- | --- |
-| **Ressources humaines** | Tables `employees`, `employee_contracts`, `leave_requests`, `attendance_records` + RLS `hr:read` | Écrans employés/contrats/congés, validation des demandes, exports |
-| **Finances** | Tables `invoices`, `invoice_items`, `payments`, `quotes`, `expenses`, `revenues`, `financial_categories` + RLS `finance:read` | Facturation, encaissements, dépenses, devis, lettrage. **Ce n'est pas une comptabilité certifiée** |
-| **Partenaires** | Tables `partners`, `partner_contacts`, `partner_agreements` | Liste, fiches, conventions, échéances |
-| **Communication** | Tables `announcements`, `calendar_events` | Annonces internes, calendrier partagé |
-| **Assistant IA** | Rien n'appelle de service externe | Cadrage, permissions, fournisseur, coûts — sur autorisation explicite |
+| **Assistant IA** | Rien n'appelle de service externe, même si une clé est présente | Cadrage, permissions, fournisseur, coûts — sur autorisation explicite |
 
 ## Signaler un problème
 

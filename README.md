@@ -1,15 +1,16 @@
 # ORGANIX
 
 Plateforme intégrée de gestion et de pilotage d'organisation : clients, prospection, projets,
-tâches, documents, collaborateurs, rôles et permissions, rapports et journal d'audit.
+tâches, documents, finances, ressources humaines, partenaires, communication interne,
+collaborateurs, rôles et permissions, rapports et journal d'audit.
 
-> **État réel du produit.** Les modules *Tableau de bord, Clients, Prospection, Projets, Tâches,
-> Documents, Rapports, Paramètres, Journal d'audit, Notifications et Recherche* sont fonctionnels
-> et persistants (PostgreSQL). Les modules *Ressources humaines, Finances, Partenaires,
-> Communication et Assistant IA* disposent de leur schéma de base de données et de leurs
-> permissions, mais **leur interface est explicitement marquée « En développement »** : les pages
-> n'affichent aucune donnée métier et n'inventent aucun chiffre. Voir
-> [`PROJECT_STATUS.md`](./PROJECT_STATUS.md).
+> **État réel du produit.** Tous les modules métier sont **fonctionnels et persistants**
+> (PostgreSQL) : tableau de bord, clients, prospection, projets, tâches, documents, rapports,
+> finances (factures, devis, encaissements, dépenses), ressources humaines (dossiers, contrats,
+> congés, présences — **sans paie**), partenaires (contacts, conventions), communication (annonces,
+> calendrier), paramètres, journal d'audit, notifications et recherche. Périmètres limités et
+> limites techniques détaillés dans [`PROJECT_STATUS.md`](./PROJECT_STATUS.md).
+> L'**assistant IA** reste volontairement non implémenté (aucun appel externe).
 
 ## Démarrage rapide (5 minutes)
 
@@ -20,7 +21,7 @@ en développement : la base PostgreSQL embarquée **PGlite** (WASM) est utilisé
 git clone <votre-dépôt> organix && cd organix
 npm install
 cp .env.example .env.local          # Windows : copy .env.example .env.local
-npm run db:migrate                  # crée le schéma (7 migrations, idempotentes)
+npm run db:migrate                  # crée le schéma (9 migrations, idempotentes)
 npm run db:seed                     # jeu de DÉMONSTRATION (fictif, clairement identifié)
 npm run dev                         # http://localhost:3000
 ```
@@ -43,6 +44,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` / `npm run test:watch` | Tests Vitest (unitaires + intégration base réelle) |
 | `npm run test:e2e` | Tests Playwright (nécessite un navigateur installé) |
+| CI | `.github/workflows/ci.yml` : types, lint, tests et build à chaque push |
 | `npm run db:migrate` | Applique les migrations et affiche leur état |
 | `npm run db:status` | Moteur, migrations, volumétrie, organisations de démonstration |
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
@@ -59,6 +61,10 @@ démonstration et aucun jeu de données fictif n'y est injecté.
   (pages, Server Actions et politiques RLS pour les modules sensibles).
 - **Argent** : entiers en unité mineure (`*_minor bigint`), jamais de flottant en base.
 - **Audit** : journal par organisation, écrit dans la même transaction que l'action métier.
+- **Intégrations remplaçables** : e-mail (`console` ou Resend via HTTP) et stockage (`local` ou
+  bucket privé Supabase Storage) choisis par variable d'environnement, sans dépendance à un SDK.
+- **Décisions documentées** : suppression logique et RLS (`docs/securite.md`), périmètre RH sans
+  paie, finances non certifiées. Les écrans rappellent ces limites.
 
 ## Documentation
 

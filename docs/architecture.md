@@ -11,7 +11,7 @@
 3. **Une seule source de vérité SQL** : les migrations `supabase/migrations/*.sql` s'appliquent à
    l'identique sur PostgreSQL réseau (Supabase, VPS) et sur PGlite (développement, tests).
 4. **Aucune fonctionnalité factice** : une page qui ne lit pas de données réelles est marquée
-   « En développement » et n'affiche ni chiffre ni graphique inventés.
+   « Non disponible » et n'affiche ni chiffre ni graphique inventés.
 
 ## Structure des fichiers
 
@@ -26,7 +26,8 @@ src/
       clients/ prospection/ projets/ taches/ documents/ rapports/
       parametres/{organisation,equipe,roles,modules,profil}/
       journal/ notifications/ recherche/ acces-refuse/
-      rh/ finances/ partenaires/ communication/ assistant/   ← « En développement »
+      rh/ finances/ partenaires/ communication/             ← modules métier (périmètres limités)
+      assistant/                                          ← « Non disponible » (aucun appel IA)
     api/
       documents/[id]/route.ts   téléchargement contrôlé (permission + appartenance)
       organisations/activer/    changement d'organisation active (cookie)

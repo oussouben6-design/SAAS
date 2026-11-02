@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requirePermission } from "@/lib/server/context";
+import { listMemberships, requirePermission, requireUser } from "@/lib/server/context";
+import { writeActiveOrgCookie } from "@/lib/auth/cookies";
 import { guard, success, type ActionResult } from "@/lib/server/action";
 import { AppError } from "@/lib/server/errors";
 import { uuidSchema } from "@/lib/validation/common";
@@ -28,6 +29,27 @@ import { inviteMember } from "./invitations";
 
 function ctx(context: Awaited<ReturnType<typeof requirePermission>>) {
   return { userId: context.user.id, organizationId: context.organization!.id };
+}
+
+/**
+ * Change l'organisation active de la session courante.
+ * Le cookie n'est posé que si l'utilisateur est réellement membre actif.
+ */
+export async function switchOrganizationAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  return guard(async () => {
+    const user = await requireUser();
+    const { organizationId } = z.object({ organizationId: uuidSchema }).parse(Object.fromEntries(formData));
+    const memberships = await listMemberships(user.id);
+    if (!memberships.some((membership) => membership.organization_id === organizationId)) {
+      throw new AppError("forbidden", "Vous n'êtes pas membre actif de cette organisation.");
+    }
+    await writeActiveOrgCookie(organizationId);
+    revalidatePath("/app", "layout");
+    return success("Organisation active changée.");
+  });
 }
 
 export async function updateOrganizationAction(

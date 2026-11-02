@@ -55,12 +55,16 @@ Gestion du processus : `systemd` ou `pm2` avec redémarrage automatique. Gardez 
 
 ## Option B — Vercel + Supabase
 
-La base fonctionne (Supabase PostgreSQL), mais **le stockage de fichiers doit être basculé** avant
-mise en production : le système de fichiers Vercel est éphémère. `STORAGE_DRIVER=supabase` n'est pas
-implémenté et l'application refuse explicitement de l'utiliser. Deux voies :
+La base fonctionne (Supabase PostgreSQL). Le système de fichiers Vercel étant éphémère, configurez
+`STORAGE_DRIVER=supabase` (implémenté via l'API REST, bucket **privé**) :
 
-1. implémenter le pilote de stockage objet (mission dédiée, ~1 à 2 jours) ;
-2. déployer sur un hébergeur à disque persistant (option A).
+1. créer un bucket privé `documents` dans Supabase Storage ;
+2. renseigner `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET` ;
+3. vérifier un dépôt + téléchargement de document après déploiement.
+
+⚠️ Ce pilote n'a pas pu être validé contre un projet Supabase réel dans l'environnement de
+développement ; faites ce test avant d'ouvrir l'accès utilisateurs. À défaut, déployez sur un
+hébergeur à disque persistant (option A) avec `STORAGE_DRIVER=local`.
 
 ## Variables à renseigner en production
 
@@ -72,15 +76,16 @@ AUTO_MIGRATE=false                      # lancer db:migrate dans le pipeline de 
 APP_URL=https://organix.example.com
 AUTH_ALLOW_REGISTRATION=false           # invitation uniquement (recommandé)
 AUTH_REQUIRE_EMAIL_VERIFICATION=false   # true seulement si un transport d'e-mail est opérationnel
-MAIL_TRANSPORT=...                      # seul `console` est implémenté aujourd'hui
-STORAGE_DRIVER=local
+MAIL_TRANSPORT=console                   # ou `resend` avec RESEND_API_KEY + MAIL_FROM
+STORAGE_DRIVER=local                     # ou `supabase` (bucket privé)
 ORGANIX_STORAGE_DIR=/var/lib/organix/storage
 ```
 
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `7/7` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `9/9` migrations
+- [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée
 - [ ] HTTPS actif, `APP_URL` cohérent, cookies `Secure`
