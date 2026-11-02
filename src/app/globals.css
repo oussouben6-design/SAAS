@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Noto Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --color-background: oklch(0.984 0.003 247.86);
+  --color-foreground: oklch(0.21 0.03 256.8);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.21 0.03 256.8);
+  --color-muted: oklch(0.968 0.007 247.9);
+  --color-muted-foreground: oklch(0.5 0.02 257);
+  --color-border: oklch(0.917 0.008 252);
+  --color-input: oklch(0.9 0.01 252);
+  --color-ring: oklch(0.55 0.16 258);
+
+  --color-primary: oklch(0.48 0.16 258);
+  --color-primary-hover: oklch(0.43 0.16 258);
+  --color-primary-foreground: oklch(0.99 0.005 250);
+
+  --color-accent: oklch(0.94 0.03 250);
+  --color-accent-foreground: oklch(0.35 0.1 258);
+
+  --color-success: oklch(0.55 0.13 155);
+  --color-success-soft: oklch(0.95 0.03 155);
+  --color-warning: oklch(0.66 0.14 75);
+  --color-warning-soft: oklch(0.96 0.04 85);
+  --color-danger: oklch(0.55 0.19 25);
+  --color-danger-soft: oklch(0.96 0.03 25);
+
+  --color-sidebar: oklch(0.23 0.03 257);
+  --color-sidebar-foreground: oklch(0.9 0.01 250);
+  --color-sidebar-muted: oklch(0.66 0.02 255);
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 20%, transparent);
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+
+  .card-surface {
+    background-color: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow:
+      0 1px 2px 0 rgb(15 23 42 / 0.04),
+      0 1px 3px 0 rgb(15 23 42 / 0.03);
+  }
+
+  .animate-in-fast {
+    animation: fade-in 160ms ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
