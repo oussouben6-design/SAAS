@@ -656,6 +656,47 @@ async function seedHrFinance(
     [orgId, employeeIds[3]!, daysFromToday(-15), daysFromToday(-13)],
   );
 
+  // Contrats de travail fictifs (un par employé) et pointage des sept derniers jours.
+  for (const [index, employeeId] of employeeIds.entries()) {
+    await tx.query(
+      `insert into employee_contracts
+        (organization_id, employee_id, reference, type, start_date, salary_minor, currency, signed_at, notes)
+       values ($1, $2, $3, 'cdi', $4, $5, $6, $4, 'Contrat fictif de démonstration.')`,
+      [
+        orgId,
+        employeeId,
+        `CDI-DEMO-${String(index + 1).padStart(3, "0")}`,
+        daysFromToday(-600),
+        employees[index]!.salary,
+        CURRENCY,
+      ],
+    );
+  }
+
+  const attendanceStatuses = ["present", "present", "remote", "late"];
+  for (const [employeeIndex, employeeId] of employeeIds.slice(0, 4).entries()) {
+    for (let offset = 1; offset <= 7; offset += 1) {
+      const workDate = new Date();
+      workDate.setDate(workDate.getDate() - offset);
+      if (workDate.getDay() === 0 || workDate.getDay() === 6) continue;
+      const status = attendanceStatuses[(employeeIndex + offset) % attendanceStatuses.length]!;
+      await tx.query(
+        `insert into attendance_records
+          (organization_id, employee_id, work_date, check_in, check_out, status, notes)
+         values ($1, $2, $3, $4, $5, $6, 'Pointage fictif de démonstration.')
+         on conflict (employee_id, work_date) do nothing`,
+        [
+          orgId,
+          employeeId,
+          workDate.toISOString().slice(0, 10),
+          status === "late" ? "09:45" : "08:00",
+          "17:00",
+          status,
+        ],
+      );
+    }
+  }
+
   const partners = [
     { name: "Fournitures Générales du Niger", type: "supplier", city: "Niamey" },
     { name: "Chambre de Commerce (exemple)", type: "institution", city: "Niamey" },
@@ -683,6 +724,70 @@ async function seedHrFinance(
       `insert into partner_contacts (organization_id, partner_id, full_name, email, phone, role_title, is_primary)
        values ($1, $2, $3, $4, $5, $6, true)`,
       [orgId, rows[0]!.id, "Contact partenaire", "contact@partenaire.example", "+227 90 00 00 21", "Chargé de compte"],
+    );
+  }
+
+  // Conventions fictives : une active, une arrivée à échéance.
+  const partnerIds = await tx.query<{ id: string }>(
+    "select id from partners where organization_id = $1 order by name",
+    [orgId],
+  );
+  const agreements = [
+    { index: 0, title: "Convention d'achat de fournitures", reference: "CONV-DEMO-001", start: -300, end: 330, status: "active" },
+    { index: 1, title: "Accord de partenariat institutionnel", reference: "CONV-DEMO-002", start: -400, end: -10, status: "expired" },
+  ];
+  for (const agreement of agreements) {
+    const partnerId = partnerIds[agreement.index]?.id;
+    if (!partnerId) continue;
+    await tx.query(
+      `insert into partner_agreements
+        (organization_id, partner_id, title, reference, start_date, end_date, status, notes)
+       values ($1, $2, $3, $4, $5, $6, $7, 'Convention fictive de démonstration.')`,
+      [
+        orgId,
+        partnerId,
+        agreement.title,
+        agreement.reference,
+        daysFromToday(agreement.start),
+        daysFromToday(agreement.end),
+        agreement.status,
+      ],
+    );
+  }
+
+  // Devis fictifs : un envoyé, un accepté.
+  const quotes = [
+    { number: "DEV-DEMO-001", subject: "Refonte du site institutionnel", status: "sent", issue: -12, valid: 18, subtotal: money(2_500_000), customer: 0 },
+    { number: "DEV-DEMO-002", subject: "Accompagnement et formation", status: "accepted", issue: -30, valid: 0, subtotal: money(1_800_000), customer: 1 },
+  ];
+  for (const quote of quotes) {
+    const customerId = customerIds[quote.customer] ?? customerIds[0]!;
+    const tax = Math.round(quote.subtotal * 0.19);
+    const rows = await tx.query<{ id: string }>(
+      `insert into quotes
+        (organization_id, number, customer_id, subject, status, issue_date, valid_until, currency,
+         subtotal_minor, tax_rate, total_minor, notes, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 19, $10, $11, $12)
+       returning id`,
+      [
+        orgId,
+        quote.number,
+        customerId,
+        quote.subject,
+        quote.status,
+        daysFromToday(quote.issue),
+        daysFromToday(quote.issue + 30),
+        CURRENCY,
+        quote.subtotal,
+        quote.subtotal + tax,
+        "Devis fictif de démonstration (non contractuel).",
+        actorId,
+      ],
+    );
+    await tx.query(
+      `insert into quote_items (quote_id, description, quantity, unit_price_minor, amount_minor, position)
+       values ($1, $2, 1, $3, $3, 10)`,
+      [rows[0]!.id, quote.subject, quote.subtotal],
     );
   }
 

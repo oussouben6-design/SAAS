@@ -96,8 +96,9 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   `/app/parametres/organisation`, `/app/rapports`, `/app/journal`, `/app/finances` (et onglets
   factures/devis/dépenses/recettes/catégories), `/app/rh` (et onglets congés/présences),
   `/app/partenaires`, `/app/communication` (annonces + calendrier).
-- Données réelles affichées : 3 factures `FAC-2026-…`, effectif 5, salaires de référence, 3
-  partenaires avec contacts, annonce de démonstration.
+- Données réelles affichées (jeu de démonstration enrichi) : 3 factures, 2 devis `DEV-DEMO-…`,
+  5 employés avec **5 contrats**, 2 demandes de congé, **20 pointages**, 3 partenaires avec
+  contacts et **2 conventions**, 5 dépenses, 2 recettes, 1 annonce, 1 événement de calendrier.
 - Contrôle de permission vérifié par rôle :
   - `demo.employe` : `/app/finances` et `/app/partenaires` → 307 vers `/app/acces-refuse` ;
     `/app/communication` → 200 (annonces « tous » uniquement).
@@ -139,7 +140,10 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
    contre un compte réel** (pas de clé, pas de réseau sortant vers Resend ici).
 4. **Stockage** : `local` fonctionne ; `supabase` implémenté mais **non testé contre un projet
    réel**. Aucun mode S3.
-5. **PGlite** : mono-processus ; ne pas lancer `db:seed`/`db:status` pendant que `npm run dev` tourne.
+5. **PGlite** : mono-processus et données gardées en mémoire. Ne lancez aucun script base pendant
+   `npm run dev` et **redémarrez le serveur après une migration** (sinon le serveur ne voit pas la
+   migration : symptôme observé = permission nouvellement créée « absente »). Documenté dans
+   `docs/installation.md`.
 6. **Tests E2E non exécutés** ; CI ajoutée mais pas encore exécutée sur GitHub.
 7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée.
 8. **Assistant IA** non implémenté ; aucun appel sortant.

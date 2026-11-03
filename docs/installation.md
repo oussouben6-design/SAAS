@@ -130,3 +130,13 @@ bord), `/app/parametres/equipe`, `/app/parametres/roles`.
 | E-mail de vérification non reçu | `MAIL_TRANSPORT=console` | Le lien est affiché dans la console du serveur |
 | `npm run db:reset` refuse | Base distante détectée | Procédure manuelle (voir ci-dessus) |
 | Un script de maintenance échoue pendant que `npm run dev` tourne | PGlite n'accepte qu'un seul processus | Arrêter le serveur avant `db:seed`, `db:status`, `db:migrate` |
+
+## Pièges du mode PGlite (développement)
+
+- **Un seul processus** : arrêtez `npm run dev` avant `db:migrate`, `db:seed`, `db:status`,
+  `db:backup`, `db:maintenance` ou tout script utilisant la base.
+- **Cache mémoire** : si une migration est appliquée pendant que le serveur tourne, le serveur
+  continue de servir les données qu'il a en mémoire ; une permission ou une table nouvellement
+  créée semble absente. **Redémarrez le serveur** après toute migration.
+- **Sauvegardes** : `npm run db:backup` effectue une copie à froid ; ne copiez jamais
+  `.data/pglite` pendant que le serveur écrit.
