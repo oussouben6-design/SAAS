@@ -102,6 +102,13 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
 - **Profil** : nom, téléphone, intitulé, changement de mot de passe (révoque les autres sessions),
   **sessions actives** (navigateur, IP, dernière activité) avec révocation individuelle ou de tous
   les autres appareils.
+- **Sécurité** : activation de la **double authentification** (application d'authentification
+  compatible TOTP). Le secret s'ajoute manuellement (ou via le lien `otpauth://`) ; un premier code
+  valide confirme l'activation et affiche **10 codes de secours** à conserver hors ligne. Ensuite,
+  chaque connexion demande le mot de passe **puis** un code à 6 chiffres (ou un code de secours,
+  utilisable une seule fois). La désactivation exige le mot de passe actuel et déconnecte les autres
+  sessions. Si l'écran indique que la fonctionnalité est indisponible, l'administrateur doit définir
+  `MFA_ENCRYPTION_KEY` (voir `docs/configuration.md`).
 
 ## Finances (`/app/finances`)
 

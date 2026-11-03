@@ -12,16 +12,16 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | 10/10 appliquées sans erreur (PGlite), idempotentes |
-| Tables métier | 46 |
-| Politiques RLS | 125 (RLS activée **et forcée** sur toutes les tables métier) |
+| Migrations SQL | 11/11 appliquées sans erreur (PGlite), idempotentes |
+| Tables métier | 48 |
+| Politiques RLS | 127 (RLS activée **et forcée** sur toutes les tables métier) |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **83 tests / 83** en 11 fichiers (~50 s) |
-| `npm run build` | ✅ build de production, 44 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
+| `npm test` (Vitest) | ✅ **92 tests / 92** en 13 fichiers (~55 s) |
+| `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
-| Supervision / vérification | ✅ `GET /api/health` (200, 10/10 migrations) et `npm run smoke` : **19/19 contrôles HTTP réussis** |
+| Supervision / vérification | ✅ `GET /api/health` (200, 11/11 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
 | CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
@@ -33,7 +33,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
-| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, **gestion des sessions actives par l'utilisateur**, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit | 2FA ; transport SMTP non implémenté |
+| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours) | Activation 2FA facultative ; transport SMTP non implémenté |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
 | Collaborateurs & invitations | ✅ Opérationnel | Invitation avec jeton, acceptation, rôles multiples, suspension, protection du propriétaire | Renvoi d'invitation en un clic |
 | Rôles & permissions | ✅ Opérationnel | Matrice 16×7 éditable, verrouillage du rôle propriétaire, audit | Duplication de rôle |
@@ -63,10 +63,10 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 11 passed (11) · Tests 83 passed (83) · ~50 s
-npm run build           → succès, 44 routes
-npm run smoke -- --token … → 19/19 contrôles (16 pages + 2 publiques + /api/health)
-npm run db:backup -- --verifier → 1228 empreintes OK, 46 tables, 125 politiques RLS
+npm test                → Test Files 13 passed (13) · Tests 92 passed (92) · ~55 s
+npm run build           → succès, 45 routes
+npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
+npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS
 npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 clients, 3 factures
 ```
 
@@ -107,8 +107,8 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   - `demo.lecteur` : `/app/rh`, `/app/finances`, `/app/partenaires` → 307.
   - `demo.gestionnaire` : `/app/rh`, `/app/partenaires`, `/app/communication` → 200 ;
     `/app/finances` → 307.
-- `npm run smoke -- --token …` : **19/19 contrôles réussis** (pages publiques, connexion, 16 pages
-  métier, `/api/health` → `ok`, 10/10 migrations).
+- `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
+  métier, `/api/health` → `ok`, 11/11 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
   (`ArrayBuffer is not detachable`) : spécifique à Next.js dev + PGlite, disparaît au rechargement ;
@@ -185,7 +185,8 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 6. **Partenaires/communication** : pièces jointes aux conventions, abonnements au calendrier (ICS),
    notifications temps réel.
 7. **Assistant IA** : sur autorisation explicite (fournisseur, coûts, données autorisées).
-8. **Durcissement** : généraliser `<module>:read` en RLS, CSP, 2FA, purge des sessions expirées.
+8. **Durcissement** : généraliser `<module>:read` en RLS, purge planifiée des sessions expirées,
+   obligation de 2FA pour les rôles administrateurs.
 
 ---
 

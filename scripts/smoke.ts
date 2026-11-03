@@ -41,6 +41,7 @@ const PRIVATE_PAGES = [
   "/app/recherche?q=de",
   "/app/parametres/organisation",
   "/app/parametres/profil",
+  "/app/parametres/securite",
   "/api/health",
 ];
 

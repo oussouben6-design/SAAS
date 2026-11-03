@@ -52,7 +52,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
-| `npm run smoke` | Vérification post-déploiement : connexion + 16 pages clés + `/api/health` |
+| `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
 ## Architecture en bref

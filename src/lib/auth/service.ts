@@ -3,6 +3,7 @@ import { privileged } from "@/lib/db";
 import { hashPassword, verifyPassword } from "./password";
 import { generateToken, hashToken } from "./tokens";
 import { appBaseUrl, sendMail, type MailResult } from "@/lib/mail";
+import { verifyChallenge } from "./mfa";
 
 /**
  * Service d'authentification.
@@ -38,11 +39,13 @@ export type AuthFailureCode =
   | "invalid_token"
   | "expired_token"
   | "weak_password"
+  | "mfa_required"
+  | "mfa_invalid_code"
   | "unknown";
 
 export type AuthResult<T> =
   | { ok: true; data: T }
-  | { ok: false; code: AuthFailureCode; message: string };
+  | { ok: false; code: AuthFailureCode; message: string; challenge?: string };
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -274,6 +277,28 @@ export async function authenticate(input: {
       };
     }
 
+    // Double authentification : le mot de passe seul n'ouvre aucune session.
+    const mfa = await tx.query<{ confirmed_at: string }>(
+      "select confirmed_at from user_mfa where user_id = $1 and confirmed_at is not null",
+      [row.id],
+    );
+    if (mfa.length > 0) {
+      const challenge = generateToken(32);
+      const challengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await tx.query("delete from mfa_challenges where user_id = $1 and expires_at < now()", [row.id]);
+      await tx.query(
+        `insert into mfa_challenges (user_id, token_hash, expires_at, ip, user_agent)
+         values ($1, $2, $3, $4, $5)`,
+        [row.id, hashToken(challenge), challengeExpiresAt, input.ip, input.userAgent],
+      );
+      return {
+        ok: false as const,
+        code: "mfa_required" as const,
+        message: "Saisissez le code à 6 chiffres de votre application d'authentification.",
+        challenge,
+      };
+    }
+
     const token = generateToken();
     const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
     await tx.query(
@@ -286,6 +311,68 @@ export async function authenticate(input: {
     return {
       ok: true as const,
       data: { token, expiresAt, user: mapProfile(row) },
+    };
+  });
+}
+
+/**
+ * Seconde étape de connexion : vérifie le défi + le code TOTP (ou un code de secours),
+ * puis ouvre la session. Utilise le même délai et le même renouvellement que `authenticate`.
+ */
+export async function completeMfaLogin(input: {
+  challenge: string;
+  code: string;
+  ip: string | null;
+  userAgent: string | null;
+}): Promise<AuthResult<{ token: string; expiresAt: Date; user: AuthUser; recoveryCodeUsed: boolean }>> {
+  const verified = await verifyChallenge({ challenge: input.challenge, code: input.code });
+  if (!verified.ok) {
+    const code =
+      verified.code === "invalid_code" || verified.code === "invalid_challenge"
+        ? ("mfa_invalid_code" as const)
+        : ("unknown" as const);
+    return { ok: false, code, message: verified.message };
+  }
+
+  return privileged(async (tx) => {
+    const rows = await tx.query<{
+      id: string;
+      email: string;
+      full_name: string;
+      avatar_url: string | null;
+      email_verified_at: string | null;
+      is_active: boolean;
+    }>(
+      `select id, email, full_name, avatar_url, email_verified_at, is_active
+         from profiles where id = $1 and is_active`,
+      [verified.data.userId],
+    );
+    const profile = rows[0];
+    if (!profile) {
+      return {
+        ok: false as const,
+        code: "inactive_account" as const,
+        message: "Ce compte est désactivé. Contactez un administrateur.",
+      };
+    }
+
+    const token = generateToken();
+    const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+    await tx.query(
+      `insert into sessions (user_id, token_hash, ip, user_agent, expires_at)
+       values ($1, $2, $3, $4, $5)`,
+      [profile.id, hashToken(token), input.ip, input.userAgent, expiresAt],
+    );
+    await tx.query("update profiles set last_seen_at = now() where id = $1", [profile.id]);
+
+    return {
+      ok: true as const,
+      data: {
+        token,
+        expiresAt,
+        user: mapProfile(profile),
+        recoveryCodeUsed: verified.data.consumedRecoveryCode,
+      },
     };
   });
 }

@@ -81,8 +81,10 @@ annonces) ; les listes des autres modules appliquent le même filtre. La migrati
 2. **Rapports et recherche globale** agrègent des données de modules que certains rôles n'ouvrent
    pas en lecture. Les chiffres affichés restent ceux de l'organisation ; aucune donnée d'une autre
    organisation n'est accessible.
-3. **Pas encore** : 2FA, révocation de session par un administrateur, purge planifiée des sessions
+3. **Pas encore** : révocation de session par un administrateur, purge planifiée des sessions
    expirées, chiffrement au repos applicatif (la base managée le fournit).
+   La double authentification TOTP est implémentée (voir ci-dessous) mais reste **facultative** :
+   aucun rôle n'est encore contraint de l'activer.
    **CSP** : appliquée en production, mais sans nonce (Next.js injecte des scripts inline) —
    `script-src 'unsafe-inline'` reste donc nécessaire. Elle bloque les ressources tierces,
    `<object>`, `<base>` détourné et les formulaires externes, pas les injections inline.
@@ -91,6 +93,22 @@ annonces) ; les listes des autres modules appliquent le même filtre. La migrati
    L'envoi Resend n'a pas été testé contre un compte réel dans cet environnement.
 5. **Playwright** : les parcours E2E existent mais n'ont pas été exécutés dans cet environnement
    (navigateurs non téléchargeables). Voir `PROJECT_STATUS.md`.
+
+## Double authentification (TOTP)
+
+- `Paramètres → Sécurité` permet à chaque utilisateur d'activer un second facteur compatible
+  Google Authenticator / Authy / 1Password (RFC 6238, HMAC-SHA1, 30 s, 6 chiffres, ±1 pas de tolérance).
+- Le secret est chiffré en **AES-256-GCM** avec `MFA_ENCRYPTION_KEY` (32 octets base64) ; la base ne
+  contient donc pas de secret exploitable seule. Sans clé, l'activation est refusée explicitement.
+- 10 codes de secours à usage unique sont générés à la confirmation, stockés **hachés** (scrypt).
+- Une fois la 2FA confirmée, `authenticate()` ne crée **aucune session** : il émet un défi
+  (jeton unique, 5 minutes, 5 essais maximum, stocké haché) et la session n'est ouverte qu'après
+  vérification du code TOTP ou d'un code de secours (`completeMfaLogin`).
+- La désactivation exige le mot de passe actuel, supprime les défis en cours et révoque toutes les
+  autres sessions.
+- Les événements `auth.mfa.enable` / `auth.mfa.disable` sont journalisés dans `audit_logs`.
+- Couverture : `tests/unit/totp.test.ts` (vecteurs RFC 6238) et `tests/integration/mfa.test.ts`
+  (chiffrement, activation, défi, rejeu, codes de secours, désactivation).
 
 ## Signaler une vulnérabilité
 

@@ -9,6 +9,7 @@ const TABS = [
   { href: "/app/parametres/roles", label: "Rôles & permissions" },
   { href: "/app/parametres/modules", label: "Modules" },
   { href: "/app/parametres/profil", label: "Mon profil" },
+  { href: "/app/parametres/securite", label: "Sécurité" },
 ];
 
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {

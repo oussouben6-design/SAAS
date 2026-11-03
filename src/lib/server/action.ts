@@ -4,7 +4,7 @@ import { fieldErrors } from "@/lib/validation/common";
 
 export type ActionResult<T = undefined> =
   | { ok: true; message?: string; data?: T }
-  | { ok: false; message: string; fieldErrors?: Record<string, string>; code?: string };
+  | { ok: false; message: string; fieldErrors?: Record<string, string>; code?: string; data?: T };
 
 /**
  * Enveloppe commune des Server Actions : convertit les erreurs métier en résultat typé

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
   authenticate,
+  completeMfaLogin,
   createUserAccount,
   requestPasswordReset,
   resetPasswordWithToken,
@@ -36,8 +37,8 @@ async function requestMeta() {
 export async function loginAction(
   _state: ActionResult<unknown> | null,
   formData: FormData,
-): Promise<ActionResult<unknown>> {
-  return guard(async () => {
+): Promise<ActionResult<{ challenge: string }>> {
+  return guard<{ challenge: string }>(async () => {
     const input = signInSchema.parse(Object.fromEntries(formData));
     const { ip, userAgent } = await requestMeta();
 
@@ -50,6 +51,45 @@ export async function loginAction(
     }
 
     const result = await authenticate({ ...input, ip, userAgent });
+    if (!result.ok) {
+      if (result.code === "mfa_required" && result.challenge) {
+        return {
+          ok: false as const,
+          code: result.code,
+          message: result.message,
+          data: { challenge: result.challenge },
+        };
+      }
+      return failure(result.message, result.code);
+    }
+
+    await writeSessionCookie(result.data.token, result.data.expiresAt);
+    const memberships = await listMemberships(result.data.user.id);
+    redirect(memberships.length === 0 ? "/onboarding" : "/app");
+  });
+}
+
+export async function mfaLoginAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  return guard(async () => {
+    const challenge = String(formData.get("challenge") ?? "");
+    const code = String(formData.get("code") ?? "");
+    const { ip, userAgent } = await requestMeta();
+
+    const limit = rateLimit(`mfa:${challenge || ip || "local"}`, 10, 15 * 60);
+    if (!limit.allowed) {
+      throw new AppError(
+        "rate_limited",
+        `Trop de tentatives. Réessayez dans ${limit.retryAfterSeconds} secondes.`,
+      );
+    }
+    if (!challenge || !/^\d{6}$|^[A-Fa-f0-9]{5}-[A-Fa-f0-9]{5}$/.test(code.trim())) {
+      return failure("Saisissez le code à 6 chiffres, ou un code de secours.", "mfa_invalid_code");
+    }
+
+    const result = await completeMfaLogin({ challenge, code, ip, userAgent });
     if (!result.ok) {
       return failure(result.message, result.code);
     }

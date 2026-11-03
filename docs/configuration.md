@@ -58,6 +58,20 @@ Procédure d'activation : créer un compte Resend, vérifier le domaine d'envoi,
 `RESEND_API_KEY` et `MAIL_FROM`, puis `MAIL_TRANSPORT=resend`. Activer ensuite
 `AUTH_REQUIRE_EMAIL_VERIFICATION=true` si la vérification d'adresse est souhaitée.
 
+## Double authentification
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `MFA_ENCRYPTION_KEY` | — (fonctionnalité désactivée) | Clé **AES-256-GCM** de 32 octets en base64 qui chiffre les secrets TOTP avant stockage. Générer avec `openssl rand -base64 32`. |
+
+- Absente ou invalide : l'écran `Paramètres → Sécurité` refuse l'activation avec un message explicite
+  (aucun secret n'est jamais stocké en clair).
+- **Changer cette clé rend les secrets existants indéchiffrables** : les utilisateurs concernés doivent
+  réenregistrer leur application d'authentification (désactivation puis réactivation).
+- Cette clé doit être sauvegardée dans le même coffre-fort que `DATABASE_URL`. Une sauvegarde de la base
+  sans cette clé ne permet pas de restaurer la 2FA des utilisateurs ; en revanche les mots de passe
+  restent valides (scrypt, non dépendant de cette clé).
+
 ## Stockage des documents
 
 | Variable | Défaut | Rôle |
