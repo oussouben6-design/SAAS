@@ -1,3 +1,4 @@
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from "node:fs";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { Pool } from "pg";
@@ -53,6 +54,95 @@ class Lock {
   }
 }
 
+/**
+ * Verrou inter-processus du répertoire PGlite.
+ *
+ * PGlite n'embarque pas de verrou multi-processus : deux processus qui ouvrent le même
+ * répertoire écrivent dans les mêmes fichiers et peuvent le corrompre (symptôme observé :
+ * `RuntimeError: Aborted()` au démarrage suivant). Ce verrou fait échouer explicitement le
+ * second processus au lieu de risquer une corruption silencieuse.
+ */
+const INSTANCE_LOCK = ".organix-instance.lock";
+
+interface LockContent {
+  pid: number;
+  startedAt: string;
+  command: string;
+}
+
+function isProcessAlive(pid: number): boolean {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/** Répertoires déjà ouverts par ce processus (une seconde ouverture corromprait aussi la base). */
+const openDataDirs = new Set<string>();
+
+export function acquireDataDirLock(dataDir: string): () => void {
+  mkdirSync(dataDir, { recursive: true });
+  const lockPath = path.join(dataDir, INSTANCE_LOCK);
+  const absolute = path.resolve(dataDir);
+  if (openDataDirs.has(absolute)) {
+    throw new Error(
+      `La base PGlite de « ${dataDir} » est déjà ouverte dans ce processus. ` +
+        "Fermez l'instance existante (closeDb) avant d'en ouvrir une nouvelle.",
+    );
+  }
+  const content: LockContent = {
+    pid: process.pid,
+    startedAt: new Date().toISOString(),
+    command: process.argv.slice(0, 3).join(" ").slice(0, 200),
+  };
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fd = openSync(lockPath, "wx");
+      writeSync(fd, JSON.stringify(content));
+      closeSync(fd);
+      openDataDirs.add(absolute);
+      const release = () => {
+        openDataDirs.delete(absolute);
+        try {
+          const current = JSON.parse(readFileSync(lockPath, "utf8")) as LockContent;
+          if (current.pid === process.pid) unlinkSync(lockPath);
+        } catch {
+          // Verrou déjà supprimé : rien à faire.
+        }
+      };
+      process.once("exit", release);
+      return release;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      let holder: LockContent | null = null;
+      try {
+        holder = JSON.parse(readFileSync(lockPath, "utf8")) as LockContent;
+      } catch {
+        holder = null;
+      }
+      if (holder && holder.pid !== process.pid && isProcessAlive(holder.pid)) {
+        throw new Error(
+          `La base PGlite de « ${dataDir} » est déjà utilisée par le processus ${holder.pid}` +
+            ` (${holder.command}, depuis ${holder.startedAt}). ` +
+            "Arrêtez-le (par exemple `npm run dev`) avant de lancer une commande base de données. " +
+            "Deux processus simultanés sur le même répertoire PGlite le corrompent.",
+        );
+      }
+      // Verrou orphelin (processus mort) : on le remplace.
+      try {
+        unlinkSync(lockPath);
+      } catch {
+        // Course bénigne avec un autre processus : la tentative suivante échouera proprement.
+      }
+    }
+  }
+  throw new Error(`Impossible d'obtenir le verrou de la base PGlite « ${dataDir} ».`);
+}
+
 export abstract class BaseDb implements DbClient {
   abstract readonly driver: "pglite" | "postgres";
 
@@ -98,7 +188,10 @@ export class PgliteDb extends BaseDb {
   readonly driver = "pglite" as const;
   private readonly lock = new Lock();
 
-  private constructor(private readonly db: PGlite) {
+  private constructor(
+    private readonly db: PGlite,
+    private readonly releaseLock: () => void,
+  ) {
     super();
   }
 
@@ -106,7 +199,14 @@ export class PgliteDb extends BaseDb {
     dataDir: string,
     onReady?: (executor: SqlExecutor) => Promise<void>,
   ): Promise<PgliteDb> {
-    const pglite = await PGlite.create({ dataDir });
+    const releaseLock = acquireDataDirLock(dataDir);
+    let pglite: PGlite;
+    try {
+      pglite = await PGlite.create({ dataDir });
+    } catch (error) {
+      releaseLock();
+      throw error;
+    }
     const executor: SqlExecutor = {
       query: async <T>(text: string, params?: unknown[]) => {
         const result = await pglite.query<T>(text, params);
@@ -116,7 +216,7 @@ export class PgliteDb extends BaseDb {
         await pglite.exec(sql);
       },
     };
-    const instance = new PgliteDb(pglite);
+    const instance = new PgliteDb(pglite, releaseLock);
     if (onReady) {
       const unlock = await instance.lock.acquire();
       try {
@@ -146,7 +246,11 @@ export class PgliteDb extends BaseDb {
   }
 
   async close(): Promise<void> {
-    await this.db.close();
+    try {
+      await this.db.close();
+    } finally {
+      this.releaseLock();
+    }
   }
 }
 

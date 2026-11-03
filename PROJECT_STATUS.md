@@ -18,7 +18,7 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **92 tests / 92** en 13 fichiers (~55 s) |
+| `npm test` (Vitest) | ✅ **96 tests / 96** en 14 fichiers (~55 s) |
 | `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Supervision / vérification | ✅ `GET /api/health` (200, 11/11 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
@@ -63,11 +63,12 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 13 passed (13) · Tests 92 passed (92) · ~55 s
+npm test                → Test Files 14 passed (14) · Tests 96 passed (96) · ~55 s
 npm run build           → succès, 45 routes
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS
-npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 clients, 3 factures
+npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
+npm run db:migrate      → 11/11 migrations, 48 tables, 127 politiques RLS
 ```
 
 | Fichier | Couverture |
@@ -130,6 +131,8 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
 | Erreurs de permission renvoyées en HTTP 500 | `requirePagePermission` redirige vers `/app/acces-refuse` |
 | Deadlock `privileged()` dans une transaction `asMember()` | Découpage des invitations en trois phases |
 | Absence de séparation réel/démo | Colonne `organizations.is_demo`, bandeau, `db:status`, seed gardé |
+| **Base PGlite corrompue** (`RuntimeError: Aborted()` au démarrage, pages en 500) après arrêt brutal du serveur | Restauration vérifiée depuis `backups/organix-20261103-122220` (1228 empreintes), migration `0011` puis re-seed. Prévention : verrou `.organix-instance.lock` (refus explicite d'un second processus), fermeture propre sur `SIGTERM`/`SIGINT`, procédure de reprise documentée (`docs/installation.md`, `docs/sauvegarde-restauration.md`) |
+| Build lancé pendant `npm run dev` → chunks manquants (`Cannot find module './NNN.js'`), pages en 500 | Suppression de `.next`, redémarrage du serveur ; interdit documenté dans les pièges PGlite |
 
 ---
 

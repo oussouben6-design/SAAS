@@ -130,3 +130,20 @@ Ne copiez jamais `.data/pglite` pendant que le serveur ou un script tourne (éta
 - Après restauration, vérifiez que la démonstration n'a pas été réintroduite
   (`npm run db:status` signale les organisations `is_demo`).
 - Documentez chaque opération (date, fichier, taille, durée, opérateur) dans un registre.
+
+## Récupération après corruption de la base embarquée
+
+PGlite ne sait pas toujours se remettre d'un arrêt brutal (`kill -9`) ou d'une ouverture par deux
+processus : au démarrage suivant, `PgliteDb.create` échoue avec `RuntimeError: Aborted()`. La
+procédure est celle d'une restauration normale, sur la dernière sauvegarde valide :
+
+1. Arrêter l'application (`Ctrl+C`, jamais `kill -9`).
+2. `ls -1 backups/ | tail -3` puis `npm run db:backup -- --verifier` sur une copie si un doute existe.
+3. `npm run db:restore -- --depuis backups/organix-AAAA... --yes --force` — l'ancienne base est
+   conservée dans `.data/pglite.avant-restauration-<horodatage>`.
+4. `npm run db:migrate` puis, pour une démonstration, `npm run db:seed -- --force`.
+5. Contrôler avec `npm run db:status`, redémarrer, puis `curl /api/health` (doit renvoyer `ok`).
+6. Supprimer le répertoire `avant-restauration` une fois la reprise vérifiée.
+
+Prévention : le verrou `.organix-instance.lock` empêche deux processus simultanés, et l'arrêt
+`SIGTERM` ferme proprement la base.

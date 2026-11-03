@@ -140,3 +140,28 @@ bord), `/app/parametres/equipe`, `/app/parametres/roles`.
   créée semble absente. **Redémarrez le serveur** après toute migration.
 - **Sauvegardes** : `npm run db:backup` effectue une copie à froid ; ne copiez jamais
   `.data/pglite` pendant que le serveur écrit.
+- **Verrou inter-processus** : PGlite n'embarque aucun verrou multi-processus. ORGANIX pose donc
+  `.data/pglite/.organix-instance.lock` (PID + horodatage). Une seconde commande sur le même
+  répertoire échoue immédiatement avec un message explicite (« déjà utilisée par le processus N »)
+  au lieu de corrompre la base. Un verrou laissé par un processus mort est repris automatiquement.
+- **Arrêt propre** : le serveur Next.js ferme PGlite sur `SIGTERM`/`SIGINT` (journal :
+  `[organix:db] arrêt du serveur, fermeture de la base…`). Évitez `kill -9` : un arrêt brutal en
+  pleine écriture laisse la base dans un état irrécupérable par PostgreSQL-WASM.
+- **`next build` pendant `npm run dev`** : interdit. Le build réécrit `.next/` sous les pieds du
+  serveur de développement (erreurs `Cannot find module './NNN.js'`, pages en 500). Arrêtez le
+  serveur avant de builder.
+
+### Repartir d'une base saine (`RuntimeError: Aborted()`)
+
+Symptôme : `PgliteDb.create` échoue avec `RuntimeError: Aborted()`, y compris hors application, et
+les pages répondent 500 tandis que `/api/health` renvoie 503.
+
+```bash
+# 1. arrêter le serveur (le verrou est libéré)
+# 2. vérifier la dernière sauvegarde
+ls -1 backups/ | tail -3
+npm run db:restore -- --depuis backups/organix-AAAA... --yes --force   # conserve l'ancienne base
+npm run db:migrate
+ORGANIX_SEED_PASSWORD='…' npm run db:seed -- --force                   # si base de démonstration
+rm -rf .data/pglite.avant-restauration-*                               # après contrôle
+```

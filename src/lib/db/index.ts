@@ -5,7 +5,39 @@ import { runMigrations } from "./migrate";
 
 export type { DbClient, SessionContext, SqlExecutor } from "./client";
 
-type DbGlobal = typeof globalThis & { __organixDb?: Promise<DbClient> };
+type DbGlobal = typeof globalThis & {
+  __organixDb?: Promise<DbClient>;
+  __organixShutdownHooks?: boolean;
+};
+
+/**
+ * Arrêt propre de la base embarquée.
+ *
+ * Un `SIGTERM`/`SIGINT` reçu par le serveur Next.js doit fermer PGlite avant la sortie du
+ * processus : un arrêt brutal en pleine écriture peut laisser le répertoire dans un état que
+ * PostgreSQL-WASM ne sait pas récupérer (`RuntimeError: Aborted()` au démarrage suivant).
+ * Les scripts en ligne de commande gèrent eux-mêmes leur cycle de vie (`closeDb`) et ne sont
+ * donc pas concernés.
+ */
+function registerShutdownHooks() {
+  const globalForDb = globalThis as DbGlobal;
+  if (globalForDb.__organixShutdownHooks) return;
+  globalForDb.__organixShutdownHooks = true;
+
+  const isNextServer = process.argv.some(
+    (arg) => arg.includes("next/dist/server") || arg.includes("next-server"),
+  );
+  if (!isNextServer) return;
+
+  const shutdown = (code: number) => {
+    console.info("[organix:db] arrêt du serveur, fermeture de la base…");
+    closeDb()
+      .catch((error: unknown) => console.error("[organix:db] fermeture impossible", error))
+      .finally(() => process.exit(code));
+  };
+  process.once("SIGTERM", () => shutdown(143));
+  process.once("SIGINT", () => shutdown(130));
+}
 
 function resolveMode(): "pglite" | "postgres" {
   const explicit = process.env.DATABASE_MODE?.toLowerCase();
@@ -38,6 +70,7 @@ async function createDb(): Promise<DbClient> {
     ? path.resolve(process.cwd(), process.env.ORGANIX_DATA_DIR)
     : path.join(process.cwd(), ".data", "pglite");
   await mkdir(path.dirname(dataDir), { recursive: true });
+  registerShutdownHooks();
   return PgliteDb.create(dataDir, bootstrap);
 }
 
