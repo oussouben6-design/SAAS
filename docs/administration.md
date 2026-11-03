@@ -52,6 +52,15 @@ données existantes sont conservées. Les modules RH, Finances, Partenaires, Com
 livrés complets et désactivables : les désactiver retire l'accès sans supprimer les données. Les activer n'ajoute pas de
 fonctionnalités d'écriture.
 
+## Surveillance et vérification
+
+- `GET /api/health` : renvoie `{"status":"ok"}` si la base répond et si toutes les migrations sont
+  appliquées (`503` sinon). À brancher sur votre supervision (UptimeRobot, Better Stack, ping
+  hébergeur). Aucune donnée métier n'y figure.
+- `npm run smoke -- --url https://votre-domaine` : se connecte réellement et contrôle 16 pages +
+  la sonde de santé. Utilisez `--token` si la base n'est pas accessible depuis la machine de test.
+- `npm run db:status` : moteur, migrations, volumétrie, organisations de démonstration.
+
 ## Journal d'audit
 
 **Journal d'audit** (permission `audit:read`, réservée à l'administrateur principal par défaut

@@ -21,7 +21,8 @@
     "db:status": "tsx --env-file-if-exists=.env.local scripts/db-status.ts",
     "db:backup": "tsx --env-file-if-exists=.env.local scripts/backup.ts",
     "db:restore": "tsx --env-file-if-exists=.env.local scripts/restore.ts",
-    "db:maintenance": "tsx --env-file-if-exists=.env.local scripts/maintenance.ts"
+    "db:maintenance": "tsx --env-file-if-exists=.env.local scripts/maintenance.ts",
+    "smoke": "tsx --env-file-if-exists=.env.local scripts/smoke.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.14",

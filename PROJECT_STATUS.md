@@ -12,15 +12,16 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | 9/9 appliquées sans erreur (PGlite), idempotentes |
+| Migrations SQL | 10/10 appliquées sans erreur (PGlite), idempotentes |
 | Tables métier | 46 |
 | Politiques RLS | 125 (RLS activée **et forcée** sur toutes les tables métier) |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
 | `npm test` (Vitest) | ✅ **83 tests / 83** en 11 fichiers (~50 s) |
-| `npm run build` | ✅ build de production, 42 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
+| `npm run build` | ✅ build de production, 44 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
+| Supervision / vérification | ✅ `GET /api/health` (200, 10/10 migrations) et `npm run smoke` : **19/19 contrôles HTTP réussis** |
 | CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
@@ -63,7 +64,8 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
 npm test                → Test Files 11 passed (11) · Tests 83 passed (83) · ~50 s
-npm run build           → succès, 42 routes
+npm run build           → succès, 44 routes
+npm run smoke -- --token … → 19/19 contrôles (16 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → 1228 empreintes OK, 46 tables, 125 politiques RLS
 npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 clients, 3 factures
 ```
@@ -105,6 +107,8 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   - `demo.lecteur` : `/app/rh`, `/app/finances`, `/app/partenaires` → 307.
   - `demo.gestionnaire` : `/app/rh`, `/app/partenaires`, `/app/communication` → 200 ;
     `/app/finances` → 307.
+- `npm run smoke -- --token …` : **19/19 contrôles réussis** (pages publiques, connexion, 16 pages
+  métier, `/api/health` → `ok`, 10/10 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
   (`ArrayBuffer is not detachable`) : spécifique à Next.js dev + PGlite, disparaît au rechargement ;
@@ -144,7 +148,7 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
    `npm run dev` et **redémarrez le serveur après une migration** (sinon le serveur ne voit pas la
    migration : symptôme observé = permission nouvellement créée « absente »). Documenté dans
    `docs/installation.md`.
-6. **Tests E2E non exécutés** ; CI ajoutée mais pas encore exécutée sur GitHub.
+6. **Tests E2E non exécutés** ; la CI tourne et est verte sur GitHub (3 exécutions).
 7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée.
 8. **Assistant IA** non implémenté ; aucun appel sortant.
 9. **Multi-organisations** : bascule et création disponibles, mais pas de facturation, quotas, ni

@@ -84,7 +84,7 @@ ORGANIX_STORAGE_DIR=/var/lib/organix/storage
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `9/9` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `10/10` migrations
 - [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée
@@ -93,7 +93,10 @@ ORGANIX_STORAGE_DIR=/var/lib/organix/storage
 - [ ] Aucune donnée de démonstration en base (`select count(*) from organizations where is_demo;` → 0)
 - [ ] Répertoire de stockage persistant, sauvegardé, droits restreints
 - [ ] Transport d'e-mail arbitré (sinon les invitations/réinitialisations restent manuelles)
-- [ ] Supervision : disponibilité, erreurs serveur, espace disque base + fichiers
+- [ ] Supervision : `GET /api/health` (200 = base et migrations OK, 503 sinon), erreurs serveur, espace disque base + fichiers
+- [ ] `npm run smoke -- --url https://votre-domaine` → 19/19 contrôles, ou `--token` si la base n'est pas joignable depuis la machine de test
+- [ ] `npm run db:maintenance` planifié (cron quotidien : purge sessions/jetons expirés)
+- [ ] `npm run db:backup` planifié (quotidien) + copie hors serveur chiffrée
 - [ ] Procédure de sauvegarde/restauration relue (voir `docs/sauvegarde-restauration.md`)
 
 ## Coûts (ordres de grandeur, à confirmer)

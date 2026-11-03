@@ -21,7 +21,7 @@ en développement : la base PostgreSQL embarquée **PGlite** (WASM) est utilisé
 git clone <votre-dépôt> organix && cd organix
 npm install
 cp .env.example .env.local          # Windows : copy .env.example .env.local
-npm run db:migrate                  # crée le schéma (9 migrations, idempotentes)
+npm run db:migrate                  # crée le schéma (10 migrations, idempotentes)
 npm run db:seed                     # jeu de DÉMONSTRATION (fictif, clairement identifié)
 npm run dev                         # http://localhost:3000
 ```
@@ -46,11 +46,13 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run test:e2e` | Tests Playwright (nécessite un navigateur installé) |
 | CI | `.github/workflows/ci.yml` : types, lint, tests et build à chaque push |
 | `npm run db:migrate` | Applique les migrations et affiche leur état |
+| `GET /api/health` | Sonde de disponibilité (base, migrations, latence) — sans donnée métier |
 | `npm run db:status` | Moteur, migrations, volumétrie, organisations de démonstration |
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
+| `npm run smoke` | Vérification post-déploiement : connexion + 16 pages clés + `/api/health` |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
 ## Architecture en bref
