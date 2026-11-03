@@ -18,9 +18,10 @@ sont explicitement listés.
 | Permissions | 60 (16 modules × 7 actions), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **76 tests / 76** en 10 fichiers (~40 s) |
-| `npm run build` | ✅ build de production, 42 routes |
-| CI GitHub Actions | ✅ workflow ajouté (`.github/workflows/ci.yml`) — ⚠️ pas encore exécuté côté GitHub |
+| `npm test` (Vitest) | ✅ **82 tests / 82** en 11 fichiers (~45 s) |
+| `npm run build` | ✅ build de production, 42 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
+| Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
+| CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
 | Déploiement | ⚠️ **Aucun** — voir `docs/deploiement.md` |
@@ -31,7 +32,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
-| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit | 2FA ; transport SMTP non implémenté |
+| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, **gestion des sessions actives par l'utilisateur**, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit | 2FA ; transport SMTP non implémenté |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
 | Collaborateurs & invitations | ✅ Opérationnel | Invitation avec jeton, acceptation, rôles multiples, suspension, protection du propriétaire | Renvoi d'invitation en un clic |
 | Rôles & permissions | ✅ Opérationnel | Matrice 16×7 éditable, verrouillage du rôle propriétaire, audit | Duplication de rôle |
@@ -61,8 +62,10 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 10 passed (10) · Tests 76 passed (76) · ~40 s
+npm test                → Test Files 11 passed (11) · Tests 82 passed (82) · ~45 s
 npm run build           → succès, 42 routes
+npm run db:backup -- --verifier → 1228 empreintes OK, 46 tables, 125 politiques RLS
+npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 clients, 3 factures
 ```
 
 | Fichier | Couverture |
@@ -70,16 +73,20 @@ npm run build           → succès, 42 routes
 | `tests/unit/permissions.test.ts` | 6 rôles, propriétaire = 60 permissions, lecteur en lecture seule |
 | `tests/unit/validation.test.ts` | Schémas Zod partagés, montants en unité mineure (XOF/EUR) |
 | `tests/unit/components.test.tsx` | Design system (RTL + jsdom) |
+| `tests/unit/backup.test.ts` | Sauvegarde PGlite (copie + manifeste), contrôle d'empreintes, détection de corruption, refus d'écrasement sans `--force`, copie de sécurité, vérification par ouverture réelle |
 | `tests/unit/integrations.test.ts` | E-mails (console, Resend avec `fetch` simulé, échec HTTP, échappement HTML), stockage local (écriture/lecture/suppression, anti-traversée), stockage Supabase (requête REST, configuration incomplète, erreur 404) |
 | `tests/integration/security.test.ts` | Isolation inter-organisations, insertion croisée refusée, membre suspendu sans accès, RH inaccessible au lecteur, audit par organisation |
-| `tests/integration/auth.test.ts` | Hachage scrypt, cycle de session, révocation, réinitialisation, vérification e-mail |
+| `tests/integration/auth.test.ts` | Hachage scrypt, cycle de session, **liste et révocation de sessions (y compris refus de révoquer celle d'un autre utilisateur)**, réinitialisation, vérification e-mail |
 | `tests/integration/workflows.test.ts` | Projets/jalons, tâches et commentaires, conversion prospect → client, invitation → acceptation → rôles, protection du propriétaire, drapeau `is_demo` |
 | `tests/integration/finance.test.ts` | Numérotation, totaux HT/TVA/TTC, encaissement partiel → payé, refus de dépassement, facture payée verrouillée, transition invalide, devis → facture (une seule fois), dépenses (auto-validation interdite, suppression bloquée) |
 | `tests/integration/hr.test.ts` | Employés (CRUD, archivage, date de fin invalide), contrats, congés (chevauchement, approbation → statut employé, nouvelle décision refusée), pointage unique par jour, statut invalide |
 | `tests/integration/partners-communication.test.ts` | Partenaires (CRUD, archivage logique), contacts + contact principal unique, conventions (dates), annonces (création, audience, visibilité par rôle), calendrier (dates) |
 
 **Non exécutés** : les tests Playwright (`tests/e2e/*.spec.ts`) — navigateurs impossibles à
-télécharger ici. Le workflow CI n'a pas encore tourné sur GitHub.
+télécharger dans cet environnement.
+
+**CI** : exécutée sur GitHub le 2 novembre 2026 (run `41447870753`) — job « Types, lint, tests et
+build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@v5`, `setup-node@v5`).
 
 ---
 
@@ -139,7 +146,9 @@ télécharger ici. Le workflow CI n'a pas encore tourné sur GitHub.
 9. **Multi-organisations** : bascule et création disponibles, mais pas de facturation, quotas, ni
    sélecteur permanent (accessible via Paramètres → Organisation).
 10. **Accessibilité** : structure sémantique et focus gérés, aucun audit RGAA/WCAG complet.
-11. **Sauvegardes** : procédure documentée, **jamais testée sur une base réelle**.
+11. **Sauvegardes** : scripts `db:backup`/`db:restore` **testés sur la base PGlite locale**
+    (sauvegarde, contrôle d'empreintes, restauration et vérification d'intégrité). Restauration
+    sur une base PostgreSQL distante **non testée** (aucun serveur accessible).
 12. **Sauvegarde/restauration du stockage objet** non traitée (dépend du fournisseur).
 
 ---

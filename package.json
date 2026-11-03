@@ -18,7 +18,9 @@
     "db:migrate": "tsx --env-file-if-exists=.env.local scripts/migrate.ts",
     "db:seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "db:reset": "tsx --env-file-if-exists=.env.local scripts/reset-dev-db.ts",
-    "db:status": "tsx --env-file-if-exists=.env.local scripts/db-status.ts"
+    "db:status": "tsx --env-file-if-exists=.env.local scripts/db-status.ts",
+    "db:backup": "tsx --env-file-if-exists=.env.local scripts/backup.ts",
+    "db:restore": "tsx --env-file-if-exists=.env.local scripts/restore.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.14",

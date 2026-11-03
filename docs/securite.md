@@ -13,6 +13,8 @@
 | Journal d'audit (même transaction que l'écriture) | Traçabilité et détection | `src/lib/server/audit.ts` |
 | Suppression logique (`deleted_at`) filtrée dans les requêtes métier de chaque module | Enregistrements archivés absents des listes et exports | `src/modules/**/service.ts` |
 | Limitation de débit sur connexion / inscription / réinitialisation | Bourrage d'identifiants, envoi massif | `src/lib/rate-limit.ts` |
+| Gestion des sessions par l'utilisateur (liste, révocation individuelle, autres appareils) | Sessions oubliées sur un appareil partagé | `src/lib/auth/service.ts`, `/app/parametres/profil` |
+| En-têtes de sécurité (CSP, HSTS en production, COOP, `nosniff`, `Permissions-Policy`) | Inclusion de ressources tierces, sniffing MIME, clickjacking partiel | `next.config.ts` |
 
 ## Authentification
 
@@ -23,6 +25,9 @@
 - Jetons (sessions, vérification d'e-mail, réinitialisation, invitations) : aléatoires, **stockés
   hachés**, à usage unique pour les jetons d'action, avec expiration.
 - Changement ou réinitialisation de mot de passe → **toutes les autres sessions sont révoquées**.
+- Chaque utilisateur voit ses **sessions actives** (navigateur, IP, dernière activité, expiration) et
+  peut en révoquer une ou toutes les autres. Une session ne peut être révoquée que par son
+  propriétaire (filtre `user_id` en base) — vérifié par test.
 - Le middleware ne fait qu'une redirection sur présence de cookie : **aucune décision de sécurité**
   n'y est prise.
 
@@ -76,8 +81,11 @@ annonces) ; les listes des autres modules appliquent le même filtre. La migrati
 2. **Rapports et recherche globale** agrègent des données de modules que certains rôles n'ouvrent
    pas en lecture. Les chiffres affichés restent ceux de l'organisation ; aucune donnée d'une autre
    organisation n'est accessible.
-3. **Pas encore** : 2FA, révocation administrateur de session, politique de complexité renforcée,
-   chiffrement au repos applicatif (la base managée le fournit), en-têtes CSP stricts.
+3. **Pas encore** : 2FA, révocation de session par un administrateur, purge planifiée des sessions
+   expirées, chiffrement au repos applicatif (la base managée le fournit).
+   **CSP** : appliquée en production, mais sans nonce (Next.js injecte des scripts inline) —
+   `script-src 'unsafe-inline'` reste donc nécessaire. Elle bloque les ressources tierces,
+   `<object>`, `<base>` détourné et les formulaires externes, pas les injections inline.
 4. **Transport d'e-mail** : `console` (développement) et `resend` (HTTP) sont implémentés ; `smtp`
    ne l'est pas. Sans clé Resend, la vérification d'e-mail ne doit pas être exigée en production.
    L'envoi Resend n'a pas été testé contre un compte réel dans cet environnement.

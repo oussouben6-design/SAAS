@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { KeyRound, MailCheck, ShieldAlert, UserRound } from "lucide-react";
+import { KeyRound, Laptop, MailCheck, ShieldAlert, UserRound } from "lucide-react";
 import { requireUser, getAppContext } from "@/lib/server/context";
 import { asUser } from "@/lib/db";
 import { PageHeader, Alert } from "@/components/ui/misc";
@@ -7,10 +7,55 @@ import { Avatar } from "@/components/ui/misc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormField, Input } from "@/components/ui/input";
 import { InlineForm } from "@/components/forms/form-dialog";
-import { changePasswordAction, resendVerificationAction, updateProfileAction } from "@/modules/profile/actions";
+import { ConfirmDialog } from "@/components/forms/confirm-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  changePasswordAction,
+  resendVerificationAction,
+  revokeOtherSessionsAction,
+  revokeSessionAction,
+  updateProfileAction,
+} from "@/modules/profile/actions";
+import { readSessionToken } from "@/lib/auth/cookies";
+import { listUserSessions } from "@/lib/auth/service";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Mon profil" };
+
+/** Résumé lisible du User-Agent (aucune librairie externe). */
+function describeUserAgent(userAgent: string | null): string {
+  if (!userAgent) return "Appareil inconnu";
+  const rules: { test: RegExp; label: string }[] = [
+    { test: /Edg\//i, label: "Microsoft Edge" },
+    { test: /OPR\/|Opera/i, label: "Opera" },
+    { test: /Firefox\//i, label: "Firefox" },
+    { test: /Chrome\//i, label: "Chrome" },
+    { test: /Safari\//i, label: "Safari" },
+    { test: /curl\//i, label: "Ligne de commande (curl)" },
+  ];
+  const browser = rules.find((rule) => rule.test.test(userAgent))?.label ?? "Navigateur";
+  const platform = /Windows/i.test(userAgent)
+    ? "Windows"
+    : /Android/i.test(userAgent)
+      ? "Android"
+      : /iPhone|iPad|iOS/i.test(userAgent)
+        ? "iOS"
+        : /Mac OS X/i.test(userAgent)
+          ? "macOS"
+          : /Linux/i.test(userAgent)
+            ? "Linux"
+            : "";
+  return platform ? `${browser} · ${platform}` : browser;
+}
 
 export default async function ProfilePage() {
   const user = await requireUser();
@@ -22,6 +67,8 @@ export default async function ProfilePage() {
     ),
   );
   const profile = rows[0];
+  const token = await readSessionToken();
+  const sessions = await listUserSessions(user.id, token);
 
   return (
     <div className="space-y-5">
@@ -109,6 +156,78 @@ export default async function ProfilePage() {
               </FormField>
             </div>
           </InlineForm>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Laptop className="size-4" /> Sessions actives
+            </CardTitle>
+            <CardDescription>
+              {sessions.length} session(s) valide(s). Révoquez toute session que vous ne reconnaissez pas.
+            </CardDescription>
+          </div>
+          {sessions.length > 1 ? (
+            <ConfirmDialog
+              trigger={
+                <Button variant="outline" size="sm">
+                  Déconnecter les autres appareils
+                </Button>
+              }
+              title="Déconnecter toutes les autres sessions ?"
+              description="Les autres navigateurs et appareils devront se reconnecter. Votre session actuelle est conservée."
+              confirmLabel="Déconnecter"
+              action={revokeOtherSessionsAction}
+              fields={{}}
+            />
+          ) : null}
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Appareil</TableHead>
+                <TableHead>Adresse IP</TableHead>
+                <TableHead>Dernière activité</TableHead>
+                <TableHead>Expire le</TableHead>
+                <TableHead className="text-right" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.map((session) => (
+                <TableRow key={session.id}>
+                  <TableCell className="max-w-[280px]">
+                    <p className="truncate text-sm" title={session.userAgent ?? "Inconnu"}>
+                      {describeUserAgent(session.userAgent)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Créée le {formatDateTime(session.createdAt)}</p>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{session.ip ?? "—"}</TableCell>
+                  <TableCell className="text-xs">{formatDateTime(session.lastUsedAt)}</TableCell>
+                  <TableCell className="text-xs">{formatDateTime(session.expiresAt)}</TableCell>
+                  <TableCell className="text-right">
+                    {session.isCurrent ? (
+                      <Badge variant="success">Session actuelle</Badge>
+                    ) : (
+                      <ConfirmDialog
+                        trigger={
+                          <Button variant="ghost" size="sm">
+                            Déconnecter
+                          </Button>
+                        }
+                        title="Déconnecter cette session ?"
+                        confirmLabel="Déconnecter"
+                        action={revokeSessionAction}
+                        fields={{ sessionId: session.id }}
+                      />
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

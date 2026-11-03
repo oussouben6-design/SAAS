@@ -48,6 +48,8 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:migrate` | Applique les migrations et affiche leur état |
 | `npm run db:status` | Moteur, migrations, volumétrie, organisations de démonstration |
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
+| `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
+| `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
 ## Architecture en bref

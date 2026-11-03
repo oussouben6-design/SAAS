@@ -5,7 +5,9 @@ import {
   createUserAccount,
   requestPasswordReset,
   resetPasswordWithToken,
+  listUserSessions,
   revokeAllUserSessions,
+  revokeUserSessionById,
   validateSession,
   verifyEmailToken,
 } from "@/lib/auth/service";
@@ -53,6 +55,55 @@ describe("cycle de vie du compte", () => {
     const session = await validateSession(login.data.token);
     expect(session?.user.id).toBe(created.data.user.id);
     expect(session?.user.email).toBe("test.auth@organix.test");
+  });
+
+  it("liste les sessions actives et permet d'en révoquer une", async () => {
+    const created = await createUserAccount({
+      email: "sessions@organix.test",
+      fullName: "Sessions Multiples",
+      password: PASSWORD,
+      emailVerified: true,
+    });
+    if (!created.ok) throw new Error(created.message);
+
+    const first = await authenticate({
+      email: "sessions@organix.test",
+      password: PASSWORD,
+      ip: "10.0.0.1",
+      userAgent: "Mozilla/5.0 (Windows NT 10.0) Chrome/120",
+    });
+    const second = await authenticate({
+      email: "sessions@organix.test",
+      password: PASSWORD,
+      ip: "10.0.0.2",
+      userAgent: "Mozilla/5.0 (iPhone) Safari/605",
+    });
+    if (!first.ok || !second.ok) throw new Error("connexion impossible");
+
+    const sessions = await listUserSessions(created.data.user.id, second.data.token);
+    expect(sessions).toHaveLength(2);
+    expect(sessions.filter((session) => session.isCurrent)).toHaveLength(1);
+    expect(sessions.find((session) => session.isCurrent)?.ip).toBe("10.0.0.2");
+
+    const other = sessions.find((session) => !session.isCurrent)!;
+    expect(await revokeUserSessionById(created.data.user.id, other.id)).toBe(true);
+    const afterRevoke = await listUserSessions(created.data.user.id, second.data.token);
+    expect(afterRevoke).toHaveLength(1);
+    expect(afterRevoke[0]?.isCurrent).toBe(true);
+
+    // Le jeton révoqué ne permet plus de session valide.
+    const revokedToken = other.ip === "10.0.0.1" ? first.data.token : second.data.token;
+    expect(await validateSession(revokedToken)).toBeNull();
+
+    // Un utilisateur ne peut pas révoquer la session d'un autre.
+    const stranger = await createUserAccount({
+      email: "intrus@organix.test",
+      fullName: "Intrus Test",
+      password: PASSWORD,
+      emailVerified: true,
+    });
+    if (!stranger.ok) throw new Error(stranger.message);
+    expect(await revokeUserSessionById(stranger.data.user.id, afterRevoke[0]!.id)).toBe(false);
   });
 
   it("refuse un mot de passe incorrect", async () => {

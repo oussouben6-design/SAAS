@@ -334,6 +334,60 @@ export async function validateSession(token: string): Promise<SessionInfo | null
   });
 }
 
+export interface UserSessionRow {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+  isCurrent: boolean;
+}
+
+/** Sessions actives de l'utilisateur (la session courante est identifiée par son jeton). */
+export async function listUserSessions(userId: string, currentToken?: string | null): Promise<UserSessionRow[]> {
+  const currentHash = currentToken ? hashToken(currentToken) : null;
+  return privileged(async (tx) => {
+    const rows = await tx.query<{
+      id: string;
+      ip: string | null;
+      user_agent: string | null;
+      created_at: string;
+      last_used_at: string;
+      expires_at: string;
+      token_hash: string;
+    }>(
+      `select id, ip, user_agent, created_at, last_used_at, expires_at, token_hash
+       from sessions
+       where user_id = $1 and revoked_at is null and expires_at > now()
+       order by last_used_at desc`,
+      [userId],
+    );
+    return rows.map((row) => ({
+      id: row.id,
+      ip: row.ip,
+      userAgent: row.user_agent,
+      createdAt: row.created_at,
+      lastUsedAt: row.last_used_at,
+      expiresAt: row.expires_at,
+      isCurrent: currentHash !== null && row.token_hash === currentHash,
+    }));
+  });
+}
+
+/** Révoque une session de l'utilisateur ; une session d'un autre utilisateur est ignorée. */
+export async function revokeUserSessionById(userId: string, sessionId: string): Promise<boolean> {
+  return privileged(async (tx) => {
+    const rows = await tx.query<{ id: string }>(
+      `update sessions set revoked_at = now()
+       where id = $1 and user_id = $2 and revoked_at is null
+       returning id`,
+      [sessionId, userId],
+    );
+    return rows.length > 0;
+  });
+}
+
 export async function revokeSession(token: string): Promise<void> {
   await privileged((tx) =>
     tx.query("update sessions set revoked_at = now() where token_hash = $1 and revoked_at is null", [

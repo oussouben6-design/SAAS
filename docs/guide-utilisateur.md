@@ -92,8 +92,9 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
 - **Équipe** : invitations, rôles, départements, suspension.
 - **Rôles & permissions** : matrice par module/action ; le rôle propriétaire est verrouillé.
 - **Modules** : activation/désactivation par module.
-- **Profil** : nom, téléphone, intitulé, fuseau, changement de mot de passe (révoque les autres
-  sessions).
+- **Profil** : nom, téléphone, intitulé, changement de mot de passe (révoque les autres sessions),
+  **sessions actives** (navigateur, IP, dernière activité) avec révocation individuelle ou de tous
+  les autres appareils.
 
 ## Finances (`/app/finances`)
 

@@ -25,3 +25,7 @@ playwright/.cache
 *.log
 *.tsbuildinfo
 next-env.d.ts
+
+# Sauvegardes locales (ne jamais committer : contiennent des données réelles)
+backups/
+.data.avant-restauration-*

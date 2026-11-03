@@ -5,7 +5,13 @@ import { requireUser } from "@/lib/server/context";
 import { asUser, privileged } from "@/lib/db";
 import { guard, success, type ActionResult } from "@/lib/server/action";
 import { changePasswordSchema, profileSchema } from "@/lib/validation/auth";
-import { changePassword, revokeAllUserSessions, sendEmailVerification } from "@/lib/auth/service";
+import {
+  changePassword,
+  revokeAllUserSessions,
+  revokeUserSessionById,
+  sendEmailVerification,
+} from "@/lib/auth/service";
+import { z } from "zod";
 import { AppError } from "@/lib/server/errors";
 import { readSessionToken } from "@/lib/auth/cookies";
 import { recordAudit } from "@/lib/server/audit";
@@ -48,6 +54,54 @@ export async function changePasswordAction(
     await revokeAllUserSessions(user.id, token ?? undefined);
     await prettyAudit(user.id, user.email);
     return success("Mot de passe modifié. Les autres sessions ont été déconnectées.");
+  });
+}
+
+export async function revokeSessionAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  return guard(async () => {
+    const user = await requireUser();
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(Object.fromEntries(formData));
+    const revoked = await revokeUserSessionById(user.id, sessionId);
+    if (!revoked) throw new AppError("not_found", "Session introuvable ou déjà déconnectée.");
+    await privileged((tx) =>
+      recordAudit(tx, {
+        organizationId: null,
+        actorId: user.id,
+        actorEmail: user.email,
+        action: "auth.session.revoke",
+        entityType: "session",
+        entityId: sessionId,
+        summary: "Déconnexion d'une session",
+      }),
+    );
+    revalidatePath("/app/parametres/profil");
+    return success("Session déconnectée.");
+  });
+}
+
+export async function revokeOtherSessionsAction(
+  _state: ActionResult<unknown> | null,
+  _formData: FormData,
+): Promise<ActionResult<unknown>> {
+  return guard(async () => {
+    const user = await requireUser();
+    const token = await readSessionToken();
+    await revokeAllUserSessions(user.id, token ?? undefined);
+    await privileged((tx) =>
+      recordAudit(tx, {
+        organizationId: null,
+        actorId: user.id,
+        actorEmail: user.email,
+        action: "auth.session.revoke_others",
+        entityType: "session",
+        summary: "Déconnexion des autres sessions",
+      }),
+    );
+    revalidatePath("/app/parametres/profil");
+    return success("Les autres sessions ont été déconnectées.");
   });
 }
 

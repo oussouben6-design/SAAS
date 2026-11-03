@@ -14,6 +14,35 @@
 
 La base ne sauvegarde **pas** les fichiers, et inversement : les deux sont nécessaires.
 
+## Scripts fournis (testés sur le développement PGlite)
+
+```bash
+npm run db:backup                       # copie à froid + manifeste + empreintes SHA-256
+npm run db:backup -- --verifier         # + ouvre la copie dans une instance jetable et compte
+npm run db:backup -- --out /mnt/sauvegardes/organix
+npm run db:restore -- --depuis backups/organix-AAAA... --yes --force
+```
+
+- `db:backup` refuse de s'exécuter sur un répertoire vide ou absent ; il écrit
+  `backups/organix-<horodatage>/` avec `manifest.json`, `database/` et `storage/`.
+- `db:restore` contrôle **toutes** les empreintes avant d'écrire, refuse d'écraser une base
+  existante sans `--force`, et conserve l'ancienne base sous `<cible>.avant-restauration-<date>`.
+- En mode `postgres`, `db:backup` exige le binaire `pg_dump` (paquet `postgresql-client`) et produit
+  un dump `--format=custom` ; `db:restore` refuse volontairement de toucher une base réseau (utilisez
+  `pg_restore` dans une base de vérification).
+
+**Résultat de la vérification exécutée le 3 novembre 2026 sur la base de démonstration locale :**
+
+```
+Base         : 1225 fichier(s), 43 991 164 octets (pglite-directory)
+Stockage     : 3 fichier(s), 211 octets
+Empreintes   : 1228 contrôlées, 0 anomalie
+Vérification : 46 tables publiques, 1 organisation, 125 politiques RLS (46 tables en RLS forcée)
+Restauration : 9/9 migrations, 6 profils, 5 clients, 3 factures, 5 employés après restauration
+```
+
+⚠️ La procédure reste **non testée sur une base PostgreSQL distante** (aucun serveur accessible ici).
+
 ## Sauvegarde — PostgreSQL managé (Supabase)
 
 - **Supabase Pro** : sauvegardes quotidiennes automatiques + restauration à un instant (PITR,
