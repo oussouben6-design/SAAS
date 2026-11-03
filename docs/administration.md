@@ -52,6 +52,17 @@ données existantes sont conservées. Les modules RH, Finances, Partenaires, Com
 livrés complets et désactivables : les désactiver retire l'accès sans supprimer les données. Les activer n'ajoute pas de
 fonctionnalités d'écriture.
 
+## Créer un compte réel / premier administrateur
+
+```bash
+npm run admin:create -- --email direction@exemple.com --name "Prénom Nom" --org "Nom de l'organisation"
+```
+
+La commande refuse une adresse déjà utilisée ou un domaine de démonstration, génère un mot de passe
+aléatoire affiché une seule fois, crée l'organisation (`is_demo = false`) et attribue le rôle
+propriétaire. Les collaborateurs suivants s'ajoutent depuis **Paramètres → Équipe** (invitation) ou
+s'inscrivent eux-mêmes via `/inscription` puis rejoignent l'organisation sur invitation.
+
 ## Surveillance et vérification
 
 - `GET /api/health` : renvoie `{"status":"ok"}` si la base répond et si toutes les migrations sont

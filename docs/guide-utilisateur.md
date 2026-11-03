@@ -3,6 +3,17 @@
 Ce guide décrit **uniquement des écrans qui fonctionnent**. Les modules encore en développement sont
 listés à la fin, avec ce qu'ils font réellement aujourd'hui.
 
+## Créer votre compte (connexion réelle)
+
+1. Ouvrez `/inscription`, saisissez votre nom, votre adresse e-mail et un mot de passe (10 caractères
+   minimum ; utilisez une phrase de passe).
+2. Vous êtes connecté et redirigé vers la configuration de votre organisation (nom, secteur, pays,
+   ville, devise, fuseau, langue).
+3. Votre espace est vide et réel : chaque chiffre affiché proviendra de vos propres saisies.
+
+Les comptes `@organix.local` et l'organisation « démonstration » sont réservés à l'exploration :
+bandeau visible, données fictives, mot de passe public. Un espace réel n'affiche jamais ce bandeau.
+
 ## Se connecter
 
 - `/inscription` crée un compte (si `AUTH_ALLOW_REGISTRATION=true`), puis `/onboarding` crée votre

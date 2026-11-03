@@ -105,7 +105,31 @@ Tout PostgreSQL 15+ fonctionne (Docker, VPS, service managé). Créez une base v
 `DATABASE_URL`, puis `npm run db:migrate`. Aucune extension propriétaire n'est requise
 (`gen_random_uuid()` est fourni par PostgreSQL 13+).
 
-## 4. Vérification après installation
+## 4. Votre compte réel (hors démonstration)
+
+Le jeu de démonstration (`npm run db:seed`) ne sert qu'à explorer l'interface : son organisation est
+marquée `is_demo`, un bandeau le rappelle et son mot de passe est public. Pour travailler avec des
+données réelles, créez votre propre compte — deux moyens équivalents :
+
+1. **Depuis l'interface** : `/inscription` → création du compte → `/onboarding` (nom de
+   l'organisation, devise, fuseau) → `/app`. Aucune donnée fictive n'est copiée ; l'organisation créée
+   porte `is_demo = false`.
+2. **En ligne de commande** (pratique pour provisionner le premier administrateur en production) :
+
+```bash
+npm run admin:create -- --email vous@votre-organisation.com --name "Amina Diallo" \
+                       --org "Sahel Conseil" --country Niger --currency XOF \
+                       --timezone Africa/Niamey --city Niamey
+```
+
+- Un mot de passe fort (≥ 16 caractères) est généré et affiché **une seule fois** ; changez-le après la
+  première connexion (Paramètres → Mon profil).
+- `--password '…'` permet d'en choisir un (12 caractères minimum).
+- Le compte reçoit le rôle **propriétaire** (toutes les permissions du catalogue) et l'organisation
+  n'est **jamais** marquée comme démonstration.
+- Les adresses en `@organix.local` sont refusées : ce domaine est réservé aux comptes de démonstration.
+
+## 5. Vérification après installation
 
 ```bash
 npm run typecheck     # aucune erreur TypeScript
@@ -118,7 +142,7 @@ npm run db:status     # 7/7 migrations, volumétrie
 Puis, dans le navigateur : `/` (page publique), `/inscription`, `/connexion`, `/app` (tableau de
 bord), `/app/parametres/equipe`, `/app/parametres/roles`.
 
-## 5. Problèmes fréquents
+## 6. Problèmes fréquents
 
 | Symptôme | Cause probable | Solution |
 | --- | --- | --- |

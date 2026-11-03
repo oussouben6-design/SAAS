@@ -18,7 +18,7 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **96 tests / 96** en 14 fichiers (~55 s) |
+| `npm test` (Vitest) | ✅ **98 tests / 98** en 15 fichiers (~55 s) |
 | `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Supervision / vérification | ✅ `GET /api/health` (200, 11/11 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
@@ -33,6 +33,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
+| Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
 | Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours) | Activation 2FA facultative ; transport SMTP non implémenté |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
 | Collaborateurs & invitations | ✅ Opérationnel | Invitation avec jeton, acceptation, rôles multiples, suspension, protection du propriétaire | Renvoi d'invitation en un clic |
@@ -63,7 +64,7 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 14 passed (14) · Tests 96 passed (96) · ~55 s
+npm test                → Test Files 15 passed (15) · Tests 98 passed (98) · ~55 s
 npm run build           → succès, 45 routes
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS

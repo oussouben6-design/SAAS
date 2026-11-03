@@ -49,6 +49,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `GET /api/health` | Sonde de disponibilité (base, migrations, latence) — sans donnée métier |
 | `npm run db:status` | Moteur, migrations, volumétrie, organisations de démonstration |
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
+| `npm run admin:create` | Crée un **compte réel** + son organisation (`-- --email … --name … --org …`) |
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
