@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FormField, Input, NativeSelect, Textarea } from "@/components/ui/input";
+import { Download } from "lucide-react";
 import { FormDialog } from "@/components/forms/form-dialog";
 import { FilterBar, Pagination, StatusBadge } from "@/components/shared/filters";
 import {
@@ -29,6 +30,7 @@ export default async function PartnersPage({
   const params = await searchParams;
   const orgCtx = { userId: context.user.id, organizationId: context.organization!.id };
   const canCreate = can(context, "partners", "create");
+  const canExport = can(context, "partners", "export");
 
   const partners = await listPartners(orgCtx, {
     q: params.q,
@@ -44,7 +46,17 @@ export default async function PartnersPage({
         title="Partenaires"
         description="Fournisseurs, institutions, distributeurs et ONG : contacts et conventions."
         actions={
-          canCreate ? (
+          <>
+            {canExport ? (
+              <Button variant="outline" asChild>
+                {/* Téléchargement CSV : lien direct, pas de navigation client. */}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+                <a href="/app/partenaires/export">
+                  <Download /> Exporter
+                </a>
+              </Button>
+            ) : null}
+            {canCreate ? (
             <FormDialog
               trigger={
                 <Button>
@@ -103,7 +115,8 @@ export default async function PartnersPage({
                 <Textarea id="partner-notes" name="notes" rows={2} />
               </FormField>
             </FormDialog>
-          ) : null
+            ) : null}
+          </>
         }
       />
 

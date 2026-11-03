@@ -7,7 +7,7 @@ export interface SearchHit {
   title: string;
   subtitle: string | null;
   href: string;
-  type: "client" | "projet" | "tache" | "document" | "prospect" | "partenaire";
+  type: "client" | "projet" | "tache" | "document" | "prospect" | "partenaire" | "employe" | "facture";
   badge?: string | null;
 }
 
@@ -132,9 +132,64 @@ export async function globalSearch(context: AppContext, query: string): Promise<
             id: row.id,
             title: row.name,
             subtitle: row.type,
-            href: `/app/partenaires`,
+            href: `/app/partenaires/${row.id}`,
             type: "partenaire" as const,
             badge: "Partenaire",
+          })),
+        );
+      }
+
+      if (can(context, "hr", "read")) {
+        const employees = await tx.query<{
+          id: string;
+          full_name: string;
+          job_title: string | null;
+          status: string;
+        }>(
+          `select id, first_name || ' ' || last_name as full_name, job_title, status
+           from employees
+           where organization_id = $1 and deleted_at is null
+             and (lower(first_name || ' ' || last_name) like $2
+                  or lower(coalesce(job_title,'')) like $2
+                  or lower(coalesce(email,'')) like $2)
+           limit 4`,
+          [organization.id, like],
+        );
+        results.push(
+          ...employees.map((row) => ({
+            id: row.id,
+            title: row.full_name,
+            subtitle: row.job_title,
+            href: `/app/rh/${row.id}`,
+            type: "employe" as const,
+            badge: "Employé",
+          })),
+        );
+      }
+
+      if (can(context, "finance", "read")) {
+        const invoices = await tx.query<{
+          id: string;
+          number: string;
+          customer_name: string | null;
+          total_minor: string;
+        }>(
+          `select i.id, i.number, c.name as customer_name, i.total_minor::text
+           from invoices i
+           left join customers c on c.id = i.customer_id
+           where i.organization_id = $1 and i.deleted_at is null
+             and (lower(i.number) like $2 or lower(coalesce(c.name,'')) like $2)
+           limit 4`,
+          [organization.id, like],
+        );
+        results.push(
+          ...invoices.map((row) => ({
+            id: row.id,
+            title: row.number,
+            subtitle: row.customer_name,
+            href: `/app/finances/factures/${row.id}`,
+            type: "facture" as const,
+            badge: "Facture",
           })),
         );
       }

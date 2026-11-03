@@ -39,7 +39,7 @@ export default async function SearchPage({
                 type="search"
                 name="q"
                 defaultValue={query}
-                placeholder="Client, projet, tâche, document…"
+                placeholder="Client, projet, employé, facture, partenaire…"
                 className="h-10 w-full rounded-lg border border-input bg-card pl-9 pr-3 text-sm"
                 aria-label="Rechercher"
                 autoFocus

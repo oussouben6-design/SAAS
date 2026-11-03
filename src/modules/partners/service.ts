@@ -24,6 +24,8 @@ export interface PartnerListItem {
   city: string | null;
   country: string | null;
   status: string;
+  contact_person: string | null;
+  created_at: string;
   contacts_count: number;
   agreements_count: number;
 }
@@ -66,6 +68,7 @@ export async function listPartners(
     );
     const rows = await tx.query<PartnerListItem>(
       `select p.id, p.name, p.type, p.email, p.phone, p.city, p.country, p.status,
+              p.contact_person, p.created_at,
               (select count(*)::int from partner_contacts c where c.partner_id = p.id) as contacts_count,
               (select count(*)::int from partner_agreements a where a.partner_id = p.id) as agreements_count
        from partners p

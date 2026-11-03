@@ -50,6 +50,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
+| `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
 ## Architecture en bref
@@ -59,7 +60,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 - **PostgreSQL** via Supabase en production ou PGlite en développement — mêmes migrations SQL
   (`supabase/migrations`). Schéma `app`, RLS activée et **forcée** sur toutes les tables métier,
   rôle applicatif non-superutilisateur `organix_app` pour que les politiques s'appliquent vraiment.
-- **Permissions** : 6 rôles, 16 modules, 7 actions (60 permissions) — vérifiées côté serveur
+- **Permissions** : 6 rôles, 16 modules, 7 actions — 61 permissions effectives (chaque module n'active que les actions pertinentes) — vérifiées côté serveur
   (pages, Server Actions et politiques RLS pour les modules sensibles).
 - **Argent** : entiers en unité mineure (`*_minor bigint`), jamais de flottant en base.
 - **Audit** : journal par organisation, écrit dans la même transaction que l'action métier.
@@ -80,7 +81,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | [`docs/administration.md`](docs/administration.md) | Rôles, permissions, gestion de l'équipe et des modules |
 | [`docs/guide-utilisateur.md`](docs/guide-utilisateur.md) | Guide des écrans disponibles |
 | [`docs/deploiement.md`](docs/deploiement.md) | Mise en production, domaine, sauvegardes |
-| [`docs/sauvegarde-restauration.md`](docs/sauvegarde-restauration.md) | Sauvegarde et restauration vérifiables |
+| [`docs/sauvegarde-restauration.md`](docs/sauvegarde-restauration.md) | Sauvegarde et restauration vérifiables (script testé) |
 | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | État module par module, tests exécutés, limites |
 
 ## Licence

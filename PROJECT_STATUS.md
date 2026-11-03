@@ -15,10 +15,10 @@ sont explicitement listés.
 | Migrations SQL | 9/9 appliquées sans erreur (PGlite), idempotentes |
 | Tables métier | 46 |
 | Politiques RLS | 125 (RLS activée **et forcée** sur toutes les tables métier) |
-| Permissions | 60 (16 modules × 7 actions), 6 rôles par défaut |
+| Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **82 tests / 82** en 11 fichiers (~45 s) |
+| `npm test` (Vitest) | ✅ **83 tests / 83** en 11 fichiers (~50 s) |
 | `npm run build` | ✅ build de production, 42 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
@@ -48,7 +48,7 @@ sont explicitement listés.
 | Recherche globale | ✅ Opérationnel | Clients, prospects, projets, tâches, documents | Recherche floue |
 | **Ressources humaines** | ✅ Opérationnel (périmètre limité) | Dossiers employés (CRUD, statut, archivage), contrats, congés avec validation et contrôle de chevauchement, pointage (1 ligne/employé/jour), exports CSV, synthèse | **Aucune paie, aucun bulletin, aucune déclaration sociale** ; pas de gestion des entretiens/formations |
 | **Finances** | ✅ Opérationnel (périmètre limité) | Devis → facture, factures numérotées (`FAC-AAAA-NNNN` / `DEV-AAAA-NNNN`), lignes et totaux HT/TVA/TTC, encaissements (partiels, plafonnés au solde), statut dérivé des paiements, dépenses avec validation par un tiers, recettes, catégories, exports CSV | **Pas une comptabilité certifiée** ; pas de lettrage bancaire, rapprochement, TVA déclarative, relances |
-| **Partenaires** | ✅ Opérationnel | Liste filtrable, fiche détaillée, contacts (contact principal unique), conventions (période validée), archivage logique | Pièces jointes de convention, évaluation fournisseur |
+| **Partenaires** | ✅ Opérationnel | Liste filtrable, fiche détaillée, contacts (contact principal unique), conventions (période validée), archivage logique, **export CSV** (`partners:export`) | Pièces jointes de convention, évaluation fournisseur |
 | **Communication** | ✅ Opérationnel (périmètre limité) | Annonces (audience : tous / département / administrateurs, filtrage appliqué par RLS), épinglage, expiration, calendrier d'événements partagé | **Pas de messagerie instantanée**, pas de notifications temps réel |
 | **Assistant IA** | 🚧 Non disponible | Aucun appel externe, même si `OPENAI_API_KEY` est définie ; page d'état | Tout (cadrage, fournisseur, permissions, budget) |
 | Multi-organisations | 🟡 Base utilisable | Cookie d'organisation active, sélecteur dans Paramètres → Organisation, création d'une organisation supplémentaire avec bascule automatique | Facturation/quotas SaaS, sélecteur permanent dans la barre latérale |
@@ -62,7 +62,7 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 11 passed (11) · Tests 82 passed (82) · ~45 s
+npm test                → Test Files 11 passed (11) · Tests 83 passed (83) · ~50 s
 npm run build           → succès, 42 routes
 npm run db:backup -- --verifier → 1228 empreintes OK, 46 tables, 125 politiques RLS
 npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 clients, 3 factures
@@ -70,7 +70,7 @@ npm run db:restore ...  → base restaurée, 9/9 migrations, 6 profils, 5 client
 
 | Fichier | Couverture |
 | --- | --- |
-| `tests/unit/permissions.test.ts` | 6 rôles, propriétaire = 60 permissions, lecteur en lecture seule |
+| `tests/unit/permissions.test.ts` | 6 rôles, propriétaire = total du catalogue, lecteur en lecture seule |
 | `tests/unit/validation.test.ts` | Schémas Zod partagés, montants en unité mineure (XOF/EUR) |
 | `tests/unit/components.test.tsx` | Design system (RTL + jsdom) |
 | `tests/unit/backup.test.ts` | Sauvegarde PGlite (copie + manifeste), contrôle d'empreintes, détection de corruption, refus d'écrasement sans `--force`, copie de sécurité, vérification par ouverture réelle |

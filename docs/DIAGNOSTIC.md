@@ -60,7 +60,7 @@ Choix structurants :
 1. **Une seule vérité SQL** entre développement et production (migrations identiques).
 2. **Sessions maison** : pas de service d'authentification externe, pas de coût, contrôle complet ;
    hachage scrypt, jetons hachés, révocation.
-3. **Permissions** = 16 modules × 7 actions = 60 permissions, attribuées aux 6 rôles et modifiables
+3. **Permissions** = 16 modules × 7 actions possibles (61 permissions effectivement activées par module), attribuées aux 6 rôles et modifiables
    par organisation.
 4. **Séparation stricte** entre données réelles et démonstration : colonne `organizations.is_demo`,
    bandeau permanent, script dédié, suppression ciblée.

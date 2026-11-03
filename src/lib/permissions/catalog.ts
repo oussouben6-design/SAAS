@@ -27,7 +27,7 @@ export const MODULE_ACTIONS = {
   documents: ["read", "create", "update", "delete"],
   hr: ["read", "create", "update", "delete", "validate", "export"],
   finance: ["read", "create", "update", "delete", "validate", "export"],
-  partners: ["read", "create", "update", "delete"],
+  partners: ["read", "create", "update", "delete", "export"],
   communication: ["read", "create", "update", "delete"],
   reports: ["read", "export"],
   audit: ["read"],

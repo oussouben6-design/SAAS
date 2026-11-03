@@ -76,9 +76,16 @@ vide, les cartes affichent zéro et un message d'amorçage : aucun chiffre d'exe
 
 ## Recherche globale
 
-La barre de recherche de l'en-tête interroge clients, prospects, projets, tâches et documents de
-**votre organisation** et renvoie des liens directs. Aucun résultat n'est inventé : une recherche
+La barre de recherche de l'en-tête interroge clients, prospects, projets, tâches, documents,
+partenaires, employés (nom, poste, e-mail) et factures (numéro, client) de **votre organisation**,
+**uniquement dans les modules auxquels vous avez accès**, et renvoie des liens directs. Aucun résultat n'est inventé : une recherche
 sans correspondance affiche un état vide.
+
+## Maintenance (exploitant)
+
+`npm run db:maintenance` purge les sessions expirées depuis plus de 30 jours et les jetons d'action
+expirés depuis plus de 7 jours. À planifier quotidiennement (cron) ; aucune donnée métier n'est
+supprimée.
 
 ## Notifications
 

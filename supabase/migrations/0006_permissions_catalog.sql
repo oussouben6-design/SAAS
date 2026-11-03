@@ -55,6 +55,7 @@ insert into permissions (module, action, description) values
   ('partners', 'create', 'Créer un partenaire'),
   ('partners', 'update', 'Modifier un partenaire'),
   ('partners', 'delete', 'Supprimer un partenaire'),
+  ('partners', 'export', 'Exporter les partenaires'),
   ('communication', 'read', 'Consulter annonces et calendrier'),
   ('communication', 'create', 'Publier une annonce ou un événement'),
   ('communication', 'update', 'Modifier une annonce ou un événement'),

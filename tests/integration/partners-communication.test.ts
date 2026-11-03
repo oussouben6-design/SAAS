@@ -35,6 +35,26 @@ const basePartner = {
 };
 
 describe("partenaires", () => {
+  it("accorde la permission d'export aux rôles qui gèrent les partenaires", async () => {
+    const actor = await createTestActor({ name: "Export partenaires" });
+    const rows = await privileged((tx) =>
+      tx.query<{ key: string }>(
+        `select r.key from role_permissions rp
+         join roles r on r.id = rp.role_id
+         join permissions p on p.id = rp.permission_id
+         where r.organization_id = $1 and p.module = 'partners' and p.action = 'export'
+         order by r.key`,
+        [actor.organizationId],
+      ),
+    );
+    expect(rows.map((row) => row.key)).toEqual([
+      "department_manager",
+      "director",
+      "manager",
+      "owner",
+    ]);
+  });
+
   it("crée, met à jour, archive et liste les partenaires", async () => {
     const actor = await createTestActor({ name: "Responsable partenariats" });
     const ctx = contextOf(actor);
