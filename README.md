@@ -54,6 +54,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
 | `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` |
+| `npm run env:check` | Valide la configuration avant déploiement (Netlify, Supabase, secrets) ; code 1 si bloquant |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
 ## Architecture en bref
@@ -84,6 +85,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | [`docs/securite.md`](docs/securite.md) | Modèle de sécurité, RLS, limites connues |
 | [`docs/administration.md`](docs/administration.md) | Rôles, permissions, gestion de l'équipe et des modules |
 | [`docs/guide-utilisateur.md`](docs/guide-utilisateur.md) | Guide des écrans disponibles |
+| [`docs/netlify.md`](docs/netlify.md) | **Déploiement Netlify** : variables, limites serverless, domaine, cron de maintenance |
 | [`docs/deploiement.md`](docs/deploiement.md) | Mise en production, domaine, sauvegardes |
 | [`docs/sauvegarde-restauration.md`](docs/sauvegarde-restauration.md) | Sauvegarde et restauration vérifiables (script testé) |
 | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | État module par module, tests exécutés, limites |

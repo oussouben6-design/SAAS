@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { isServerless, SERVERLESS_STORAGE_ERROR } from "@/lib/config/platform";
 
 /**
  * Stockage des fichiers.
@@ -110,6 +111,9 @@ export async function saveFile(storagePath: string, buffer: Buffer): Promise<voi
     });
     if (!response.ok) throw await supabaseFailure(response, "enregistrement du fichier");
     return;
+  }
+  if (isServerless()) {
+    throw new Error(SERVERLESS_STORAGE_ERROR);
   }
   const target = absolutePath(storagePath);
   await mkdir(path.dirname(target), { recursive: true });

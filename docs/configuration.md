@@ -74,6 +74,18 @@ Procédure d'activation : créer un compte Resend, vérifier le domaine d'envoi,
 - **Pause du projet gratuit** : voir `docs/supabase.md` §7 (pg_cron ou supervision HTTP sur
   `/api/health`).
 
+## Maintenance planifiée
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `MAINTENANCE_SECRET` | — (route désactivée) | Jeton protégeant `POST /api/maintenance` (purge des sessions expirées). En-tête `Authorization: Bearer <secret>` ou `?token=`. Sans valeur, la route répond 503. |
+
+Exemple d'appel planifié (GitHub Actions, cron-job.org) :
+
+```bash
+curl -fsS -X POST -H "Authorization: Bearer $MAINTENANCE_SECRET" https://votre-domaine/api/maintenance
+```
+
 ## Double authentification
 
 | Variable | Défaut | Rôle |

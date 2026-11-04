@@ -18,9 +18,10 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **102 tests / 102** en 16 fichiers (~60 s) |
+| `npm test` (Vitest) | ✅ **111 tests / 111** en 17 fichiers (~65 s) |
 | `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
+| Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (16 règles, testé) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
 | Supervision / vérification | ✅ `GET /api/health` (200, 13/13 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
 | CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
@@ -65,8 +66,9 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 16 passed (16) · Tests 102 passed (102) · ~60 s
+npm test                → Test Files 17 passed (17) · Tests 111 passed (111) · ~65 s
 npm run build           → succès, 45 routes
+npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
@@ -110,7 +112,8 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   - `demo.lecteur` : `/app/rh`, `/app/finances`, `/app/partenaires` → 307.
   - `demo.gestionnaire` : `/app/rh`, `/app/partenaires`, `/app/communication` → 200 ;
     `/app/finances` → 307.
-- `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
+- `npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
+npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
   métier, `/api/health` → `ok`, 13/13 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
