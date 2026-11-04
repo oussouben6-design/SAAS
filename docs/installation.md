@@ -72,6 +72,9 @@ La commande refuse de s'exécuter si la configuration pointe vers un PostgreSQL 
 
 ## 3. Installation avec Supabase (production)
 
+> Guide détaillé, spécifique à l'offre gratuite (pooler, Storage privé, keep-alive, sauvegardes) :
+> [`docs/supabase.md`](supabase.md).
+
 1. Créez un projet sur <https://supabase.com> (plan gratuit suffisant pour démarrer).
 2. **Project Settings → Database → Connection string → URI** : copiez la chaîne du *pooler*
    (port `6543`).

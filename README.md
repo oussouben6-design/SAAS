@@ -21,7 +21,7 @@ en développement : la base PostgreSQL embarquée **PGlite** (WASM) est utilisé
 git clone <votre-dépôt> organix && cd organix
 npm install
 cp .env.example .env.local          # Windows : copy .env.example .env.local
-npm run db:migrate                  # crée le schéma (10 migrations, idempotentes)
+npm run db:migrate                  # crée le schéma (13 migrations, idempotentes)
 npm run db:seed                     # jeu de DÉMONSTRATION (fictif, clairement identifié)
 npm run dev                         # http://localhost:3000
 ```
@@ -60,7 +60,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 
 - **Monolithe modulaire** Next.js (App Router) : `src/modules/<domaine>` (services + Server Actions),
   `src/lib` (socle technique), `src/components` (design system et formulaires partagés).
-- **PostgreSQL** via Supabase en production ou PGlite en développement — mêmes migrations SQL
+- **PostgreSQL** via Supabase (offre gratuite suffisante, cf. [`docs/supabase.md`](docs/supabase.md)) ou PGlite en développement — mêmes migrations SQL
   (`supabase/migrations`). Schéma `app`, RLS activée et **forcée** sur toutes les tables métier,
   rôle applicatif non-superutilisateur `organix_app` pour que les politiques s'appliquent vraiment.
 - **Permissions** : 6 rôles, 16 modules, 7 actions — 61 permissions effectives (chaque module n'active que les actions pertinentes) — vérifiées côté serveur
@@ -78,6 +78,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | --- | --- |
 | [`docs/DIAGNOSTIC.md`](docs/DIAGNOSTIC.md) | Diagnostic technique, architecture proposée, plan, schéma initial, coûts |
 | [`docs/installation.md`](docs/installation.md) | Installation Windows / macOS / Linux, développement et Supabase |
+| [`docs/supabase.md`](docs/supabase.md) | **Déploiement Supabase (offre gratuite)** : pooler, migrations, Storage privé, keep-alive, sauvegardes |
 | [`docs/configuration.md`](docs/configuration.md) | Toutes les variables d'environnement |
 | [`docs/architecture.md`](docs/architecture.md) | Organisation du code, flux de données, conventions |
 | [`docs/securite.md`](docs/securite.md) | Modèle de sécurité, RLS, limites connues |

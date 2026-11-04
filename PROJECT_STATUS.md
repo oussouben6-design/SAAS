@@ -12,16 +12,16 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | 11/11 appliquées sans erreur (PGlite), idempotentes |
+| Migrations SQL | 13/13 appliquées sans erreur (PGlite), idempotentes |
 | Tables métier | 48 |
 | Politiques RLS | 127 (RLS activée **et forcée** sur toutes les tables métier) |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **98 tests / 98** en 15 fichiers (~55 s) |
+| `npm test` (Vitest) | ✅ **102 tests / 102** en 16 fichiers (~60 s) |
 | `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
-| Supervision / vérification | ✅ `GET /api/health` (200, 11/11 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
+| Supervision / vérification | ✅ `GET /api/health` (200, 13/13 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
 | CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
@@ -33,6 +33,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
+| Supabase (offre gratuite) | ✅ Préparé et vérifié | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` disponibles. Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma **non encore appliqué** : requiert le mot de passe de la base (pooler) |
 | Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
 | Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours) | Activation 2FA facultative ; transport SMTP non implémenté |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
@@ -64,12 +65,12 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 15 passed (15) · Tests 98 passed (98) · ~55 s
+npm test                → Test Files 16 passed (16) · Tests 102 passed (102) · ~60 s
 npm run build           → succès, 45 routes
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
-npm run db:migrate      → 11/11 migrations, 48 tables, 127 politiques RLS
+npm run db:migrate      → 13/13 migrations, 48 tables, 127 politiques RLS
 ```
 
 | Fichier | Couverture |
@@ -110,7 +111,7 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   - `demo.gestionnaire` : `/app/rh`, `/app/partenaires`, `/app/communication` → 200 ;
     `/app/finances` → 307.
 - `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
-  métier, `/api/health` → `ok`, 11/11 migrations).
+  métier, `/api/health` → `ok`, 13/13 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
   (`ArrayBuffer is not detachable`) : spécifique à Next.js dev + PGlite, disparaît au rechargement ;
