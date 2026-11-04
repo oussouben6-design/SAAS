@@ -8,7 +8,8 @@ clés dans l'interface de votre hébergeur. **Aucune valeur secrète ne doit êt
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
 | `DATABASE_MODE` | `pglite` (si `DATABASE_URL` absente) | `pglite` ou `postgres` |
-| `DATABASE_URL` | — | Chaîne PostgreSQL (requise en mode `postgres`) |
+| `DATABASE_URL` | — | Chaîne PostgreSQL (requise en mode `postgres`). **Supabase : pooler port 6543** (IPv4), format `postgresql://postgres.<ref>:<mdp>@aws-0-<région>.pooler.supabase.com:6543/postgres` |
+| `DATABASE_POOL_MAX` | `5` | Taille du pool de connexions (2 à 3 suffisent derrière un pooler) |
 | `DATABASE_SSL` | `true` | TLS vers PostgreSQL ; `false` seulement en local |
 | `AUTO_MIGRATE` | `false` | Applique les migrations au démarrage (CI / production) |
 | `ORGANIX_DATA_DIR` | `.data/pglite` | Répertoire PGlite (ignoré par Git) |
@@ -57,6 +58,21 @@ une nouvelle.
 Procédure d'activation : créer un compte Resend, vérifier le domaine d'envoi, renseigner
 `RESEND_API_KEY` et `MAIL_FROM`, puis `MAIL_TRANSPORT=resend`. Activer ensuite
 `AUTH_REQUIRE_EMAIL_VERIFICATION=true` si la vérification d'adresse est souhaitée.
+
+## Supabase (offre gratuite)
+
+- **Pooler obligatoire** : la connexion directe (`db.<ref>.supabase.co:5432`) est IPv6 uniquement.
+  Utilisez le *Transaction pooler* (port 6543).
+- **Rôle de connexion `postgres`** : il possède `BYPASSRLS` et `CREATEROLE`, ce qui permet au
+  service d'authentification de lire les tables sans politique et aux migrations de créer le rôle
+  `organix_app`. La migration `0012` autorise explicitement `set local role organix_app`
+  (PostgreSQL 16+ exige l'option `SET`).
+- **Rôles `anon` / `authenticated`** : la migration `0013` leur retire tout privilège sur `public`
+  et `app`, afin qu'aucune donnée ne soit accessible via l'API PostgREST générée par Supabase.
+- **Storage** : bucket `documents` **privé**, `STORAGE_DRIVER=supabase`, `SUPABASE_URL` et
+  `SUPABASE_SERVICE_ROLE_KEY` (serveur uniquement, jamais `NEXT_PUBLIC_*`).
+- **Pause du projet gratuit** : voir `docs/supabase.md` §7 (pg_cron ou supervision HTTP sur
+  `/api/health`).
 
 ## Double authentification
 

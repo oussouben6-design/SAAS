@@ -84,7 +84,7 @@ ORGANIX_STORAGE_DIR=/var/lib/organix/storage
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `11/11` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `13/13` migrations
 - [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée
