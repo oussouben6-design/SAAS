@@ -3,6 +3,11 @@
 > **Aucun déploiement n'a été réalisé à ce jour.** Ce document décrit une procédure reproductible ;
 > ne déclarez « en production » qu'après avoir exécuté la liste de vérification finale.
 
+## Netlify
+
+Étapes détaillées dans [`docs/netlify.md`](netlify.md) : `netlify.toml` est déjà présent, la base et
+les fichiers doivent être sur Supabase (serverless : ni PGlite, ni stockage local).
+
 ## Option A — Hébergeur Node (Vercel, Render, Railway, VPS)
 
 **Contraintes du code actuel** :

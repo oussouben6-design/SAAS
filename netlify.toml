@@ -1,0 +1,40 @@
+# =====================================================================
+# ORGANIX — configuration Netlify
+#
+# Next.js 15 (App Router, Server Actions, route handlers) via le runtime
+# officiel @netlify/plugin-nextjs. La base et les fichiers doivent être
+# hébergés hors de Netlify (serverless) :
+#   DATABASE_MODE=postgres  + DATABASE_URL (pooler Supabase, port 6543)
+#   STORAGE_DRIVER=supabase + SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY
+# Voir docs/netlify.md et docs/supabase.md.
+# =====================================================================
+
+[build]
+  command = "npm run env:check && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--no-audit --no-fund"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # Netlify exécute le build sur une plateforme serverless : ces valeurs sont
+  # rappelées ici pour éviter un build avec les réglages de développement.
+  DATABASE_MODE = "postgres"
+  STORAGE_DRIVER = "supabase"
+
+# Runtime Next.js : @netlify/plugin-nextjs est détecté et installé automatiquement
+# par Netlify dès qu'un projet Next.js est reconnu (aucune déclaration nécessaire,
+# ce qui évite les conflits de version).
+
+[functions]
+  # Les paquets natifs/WASM ne doivent pas être réempaquetés par esbuild.
+  external_node_modules = ["@electric-sql/pglite", "pg"]
+
+# Les en-têtes de sécurité (CSP, HSTS, X-Frame-Options…) sont définis dans
+# next.config.ts et appliqués par le runtime Next.js : ne pas les dupliquer ici
+# pour éviter les divergences.
+
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

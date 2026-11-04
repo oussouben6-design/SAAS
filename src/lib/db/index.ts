@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { BaseDb, PgliteDb, PgDb, type DbClient, type SessionContext, type SqlExecutor } from "./client";
 import { runMigrations } from "./migrate";
+import { isServerless, SERVERLESS_DATABASE_ERROR } from "@/lib/config/platform";
 
 export type { DbClient, SessionContext, SqlExecutor } from "./client";
 
@@ -64,6 +65,10 @@ async function createDb(): Promise<DbClient> {
       await db.privileged((tx) => bootstrap(tx));
     }
     return db;
+  }
+
+  if (isServerless()) {
+    throw new Error(SERVERLESS_DATABASE_ERROR);
   }
 
   const dataDir = process.env.ORGANIX_DATA_DIR
