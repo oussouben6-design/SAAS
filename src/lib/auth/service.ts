@@ -36,6 +36,7 @@ export type AuthFailureCode =
   | "invalid_credentials"
   | "email_taken"
   | "inactive_account"
+  | "registration_disabled"
   | "invalid_token"
   | "expired_token"
   | "weak_password"
@@ -277,41 +278,187 @@ export async function authenticate(input: {
       };
     }
 
-    // Double authentification : le mot de passe seul n'ouvre aucune session.
-    const mfa = await tx.query<{ confirmed_at: string }>(
-      "select confirmed_at from user_mfa where user_id = $1 and confirmed_at is not null",
-      [row.id],
+    return finishSignIn(tx, mapProfile(row), input);
+  });
+}
+
+/**
+ * Étape finale commune à toutes les connexions dont l'identité est prouvée
+ * (mot de passe ou Google) : si la double authentification est active, aucun
+ * accès n'est ouvert — un défi est émis ; sinon la session est créée.
+ */
+async function finishSignIn(
+  tx: SqlExecutor,
+  user: AuthUser,
+  meta: { ip: string | null; userAgent: string | null },
+): Promise<AuthResult<{ token: string; expiresAt: Date; user: AuthUser }>> {
+  const mfa = await tx.query<{ confirmed_at: string }>(
+    "select confirmed_at from user_mfa where user_id = $1 and confirmed_at is not null",
+    [user.id],
+  );
+  if (mfa.length > 0) {
+    const challenge = generateToken(32);
+    const challengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    await tx.query("delete from mfa_challenges where user_id = $1 and expires_at < now()", [user.id]);
+    await tx.query(
+      `insert into mfa_challenges (user_id, token_hash, expires_at, ip, user_agent)
+       values ($1, $2, $3, $4, $5)`,
+      [user.id, hashToken(challenge), challengeExpiresAt, meta.ip, meta.userAgent],
     );
-    if (mfa.length > 0) {
-      const challenge = generateToken(32);
-      const challengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
-      await tx.query("delete from mfa_challenges where user_id = $1 and expires_at < now()", [row.id]);
-      await tx.query(
-        `insert into mfa_challenges (user_id, token_hash, expires_at, ip, user_agent)
-         values ($1, $2, $3, $4, $5)`,
-        [row.id, hashToken(challenge), challengeExpiresAt, input.ip, input.userAgent],
+    return {
+      ok: false as const,
+      code: "mfa_required" as const,
+      message: "Saisissez le code à 6 chiffres de votre application d'authentification.",
+      challenge,
+    };
+  }
+
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
+  await tx.query(
+    `insert into sessions (user_id, token_hash, ip, user_agent, expires_at)
+     values ($1, $2, $3, $4, $5)`,
+    [user.id, hashToken(token), meta.ip, meta.userAgent, expiresAt],
+  );
+  await tx.query("update profiles set last_seen_at = now() where id = $1", [user.id]);
+
+  return { ok: true as const, data: { token, expiresAt, user } };
+}
+
+function googleDisplayName(name: string | null, email: string): string {
+  const candidate = (name ?? "").trim().slice(0, 120);
+  if (candidate.length >= 2) return candidate;
+  const local = (email.split("@")[0] ?? "").replace(/[._-]+/g, " ").trim().slice(0, 120);
+  return local.length >= 2 ? local : "Utilisateur Google";
+}
+
+/**
+ * Connexion via un profil Google déjà vérifié cryptographiquement
+ * (voir `verifyGoogleIdToken`). Règles de liaison, dans l'ordre :
+ *  1. identité Google connue (`sub`) → le compte lié, même si l'e-mail Google a changé ;
+ *  2. compte existant avec la même adresse e-mail → liaison automatique
+ *     (Google a prouvé la propriété de l'adresse ; elle est marquée vérifiée) ;
+ *  3. sinon → création d'un compte sans mot de passe, sauf si la création
+ *     libre de compte est désactivée (`AUTH_ALLOW_REGISTRATION=false`).
+ * La double authentification éventuelle s'applique ensuite, comme pour le mot de passe.
+ */
+export async function signInWithGoogle(
+  profile: { subject: string; email: string; emailVerified: boolean; name: string | null },
+  meta: { ip: string | null; userAgent: string | null },
+): Promise<AuthResult<{ token: string; expiresAt: Date; user: AuthUser; accountCreated: boolean }>> {
+  const email = normalizeEmail(profile.email);
+
+  return privileged(async (tx) => {
+    type ProfileRow = Parameters<typeof mapProfile>[0];
+
+    const byIdentity = await tx.query<ProfileRow & { identity_id: string }>(
+      `select p.id, p.email, p.full_name, p.avatar_url, p.email_verified_at, p.is_active,
+              i.id as identity_id
+       from user_identities i
+       join profiles p on p.id = i.user_id
+       where i.provider = 'google' and i.provider_subject = $1`,
+      [profile.subject],
+    );
+
+    let user: AuthUser | null = byIdentity[0] ? mapProfile(byIdentity[0]) : null;
+    const identityId: string | null = byIdentity[0]?.identity_id ?? null;
+    let accountCreated = false;
+
+    if (!user) {
+      const byEmail = await tx.query<ProfileRow>(
+        `select id, email, full_name, avatar_url, email_verified_at, is_active
+         from profiles where lower(email) = $1`,
+        [email],
       );
+      if (byEmail[0]) user = mapProfile(byEmail[0]);
+    }
+
+    if (!user) {
+      if (process.env.AUTH_ALLOW_REGISTRATION === "false") {
+        return {
+          ok: false as const,
+          code: "registration_disabled" as const,
+          message:
+            "La création de compte est désactivée. Demandez une invitation à votre administrateur.",
+        };
+      }
+      const inserted = await tx.query<ProfileRow>(
+        `insert into profiles (email, full_name, email_verified_at)
+         values ($1, $2, now())
+         returning id, email, full_name, avatar_url, email_verified_at, is_active`,
+        [email, googleDisplayName(profile.name, email)],
+      );
+      user = mapProfile(inserted[0]!);
+      accountCreated = true;
+    }
+
+    if (!user.isActive) {
       return {
         ok: false as const,
-        code: "mfa_required" as const,
-        message: "Saisissez le code à 6 chiffres de votre application d'authentification.",
-        challenge,
+        code: "inactive_account" as const,
+        message: "Ce compte est désactivé. Contactez un administrateur.",
       };
     }
 
-    const token = generateToken();
-    const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000);
-    await tx.query(
-      `insert into sessions (user_id, token_hash, ip, user_agent, expires_at)
-       values ($1, $2, $3, $4, $5)`,
-      [row.id, hashToken(token), input.ip, input.userAgent, expiresAt],
-    );
-    await tx.query("update profiles set last_seen_at = now() where id = $1", [row.id]);
+    if (!identityId) {
+      await tx.query(
+        `insert into user_identities (user_id, provider, provider_subject, provider_email, last_sign_in_at)
+         values ($1, 'google', $2, $3, now())`,
+        [user.id, profile.subject, email],
+      );
+      if (!user.emailVerifiedAt) {
+        await tx.query(
+          "update profiles set email_verified_at = now() where id = $1 and email_verified_at is null",
+          [user.id],
+        );
+        user = { ...user, emailVerifiedAt: new Date().toISOString() };
+      }
+    } else {
+      await tx.query(
+        "update user_identities set provider_email = $2, last_sign_in_at = now() where id = $1",
+        [identityId, email],
+      );
+    }
 
-    return {
-      ok: true as const,
-      data: { token, expiresAt, user: mapProfile(row) },
-    };
+    const result = await finishSignIn(tx, user, meta);
+    if (!result.ok) return result;
+    return { ok: true as const, data: { ...result.data, accountCreated } };
+  });
+}
+
+/** Le compte a-t-il un mot de passe ? (Un compte créé via Google n'en a pas.) */
+export async function hasPasswordCredentials(userId: string): Promise<boolean> {
+  return privileged(async (tx) => {
+    const rows = await tx.query<{ user_id: string }>(
+      "select user_id from user_credentials where user_id = $1",
+      [userId],
+    );
+    return rows.length > 0;
+  });
+}
+
+export interface GoogleIdentitySummary {
+  email: string | null;
+  linkedAt: string;
+  lastSignInAt: string | null;
+}
+
+/** Liaison Google du compte, pour l'écran de sécurité (lecture seule). */
+export async function getGoogleIdentitySummary(userId: string): Promise<GoogleIdentitySummary | null> {
+  return privileged(async (tx) => {
+    const rows = await tx.query<{
+      provider_email: string | null;
+      created_at: string;
+      last_sign_in_at: string | null;
+    }>(
+      `select provider_email, created_at, last_sign_in_at
+       from user_identities where user_id = $1 and provider = 'google'`,
+      [userId],
+    );
+    const row = rows[0];
+    return row
+      ? { email: row.provider_email, linkedAt: row.created_at, lastSignInAt: row.last_sign_in_at }
+      : null;
   });
 }
 

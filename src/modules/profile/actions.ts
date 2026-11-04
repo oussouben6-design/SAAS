@@ -4,12 +4,14 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/server/context";
 import { asUser, privileged } from "@/lib/db";
 import { guard, success, type ActionResult } from "@/lib/server/action";
-import { changePasswordSchema, profileSchema } from "@/lib/validation/auth";
+import { changePasswordSchema, profileSchema, setInitialPasswordSchema } from "@/lib/validation/auth";
 import {
   changePassword,
+  hasPasswordCredentials,
   revokeAllUserSessions,
   revokeUserSessionById,
   sendEmailVerification,
+  setPasswordForUser,
 } from "@/lib/auth/service";
 import { z } from "zod";
 import { AppError } from "@/lib/server/errors";
@@ -54,6 +56,32 @@ export async function changePasswordAction(
     await revokeAllUserSessions(user.id, token ?? undefined);
     await prettyAudit(user.id, user.email);
     return success("Mot de passe modifié. Les autres sessions ont été déconnectées.");
+  });
+}
+
+/**
+ * Définit le premier mot de passe d'un compte créé via Google.
+ * L'utilisateur est déjà authentifié (session valide) ; refusé si un mot de
+ * passe existe déjà — dans ce cas, seul le changement avec mot de passe actuel est accepté.
+ */
+export async function setInitialPasswordAction(
+  _state: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  return guard(async () => {
+    const user = await requireUser();
+    const input = setInitialPasswordSchema.parse(Object.fromEntries(formData));
+    if (await hasPasswordCredentials(user.id)) {
+      throw new AppError(
+        "validation",
+        "Un mot de passe est déjà défini : utilisez le changement de mot de passe.",
+      );
+    }
+    await setPasswordForUser(user.id, input.password);
+    const token = await readSessionToken();
+    await revokeAllUserSessions(user.id, token ?? undefined);
+    await prettyAudit(user.id, user.email);
+    return success("Mot de passe défini. Vous pouvez désormais aussi vous connecter par e-mail et mot de passe.");
   });
 }
 

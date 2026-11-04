@@ -155,6 +155,23 @@ export function checkEnvironment(
     );
   }
 
+  // Connexion avec Google (OAuth) : optionnelle, mais les deux variables vont ensemble.
+  const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+  if ((googleClientId && !googleClientSecret) || (!googleClientId && googleClientSecret)) {
+    errors.push(
+      "GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET doivent être définies ensemble (ou aucune des deux) : " +
+        "la connexion Google resterait sinon affichée mais toujours en échec.",
+    );
+  } else if (googleClientId && googleClientSecret) {
+    const redirectUri = `${(appUrl || "http://localhost:3000").replace(/\/$/, "")}/api/auth/google/callback`;
+    notes.push(
+      `Connexion Google activée — URI de redirection à déclarer dans Google Cloud : ${redirectUri}`,
+    );
+  } else {
+    notes.push("Connexion Google désactivée (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET absentes).");
+  }
+
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();
   notes.push(`Transport e-mail : ${mail}`);
   if (mail === "console" && env.NODE_ENV === "production") {

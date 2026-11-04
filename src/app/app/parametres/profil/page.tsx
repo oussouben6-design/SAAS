@@ -23,10 +23,11 @@ import {
   resendVerificationAction,
   revokeOtherSessionsAction,
   revokeSessionAction,
+  setInitialPasswordAction,
   updateProfileAction,
 } from "@/modules/profile/actions";
 import { readSessionToken } from "@/lib/auth/cookies";
-import { listUserSessions } from "@/lib/auth/service";
+import { hasPasswordCredentials, listUserSessions } from "@/lib/auth/service";
 import { formatDateTime } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Mon profil" };
@@ -69,6 +70,7 @@ export default async function ProfilePage() {
   const profile = rows[0];
   const token = await readSessionToken();
   const sessions = await listUserSessions(user.id, token);
+  const hasPassword = await hasPasswordCredentials(user.id);
 
   return (
     <div className="space-y-5">
@@ -139,23 +141,38 @@ export default async function ProfilePage() {
             <KeyRound className="size-4" /> Mot de passe
           </CardTitle>
           <CardDescription>
-            Le changement de mot de passe déconnecte toutes les autres sessions actives.
+            {hasPassword
+              ? "Le changement de mot de passe déconnecte toutes les autres sessions actives."
+              : "Votre compte a été créé avec Google : aucun mot de passe n'est encore défini. Définissez-en un pour pouvoir aussi vous connecter par e-mail."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <InlineForm action={changePasswordAction} submitLabel="Changer le mot de passe">
-            <FormField label="Mot de passe actuel" htmlFor="current-password" required>
-              <Input id="current-password" name="currentPassword" type="password" required autoComplete="current-password" />
-            </FormField>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField label="Nouveau mot de passe" htmlFor="new-password" required hint="10 caractères minimum.">
-                <Input id="new-password" name="password" type="password" required minLength={10} autoComplete="new-password" />
+          {hasPassword ? (
+            <InlineForm action={changePasswordAction} submitLabel="Changer le mot de passe">
+              <FormField label="Mot de passe actuel" htmlFor="current-password" required>
+                <Input id="current-password" name="currentPassword" type="password" required autoComplete="current-password" />
               </FormField>
-              <FormField label="Confirmer" htmlFor="confirm-password" required>
-                <Input id="confirm-password" name="confirmPassword" type="password" required minLength={10} autoComplete="new-password" />
-              </FormField>
-            </div>
-          </InlineForm>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Nouveau mot de passe" htmlFor="new-password" required hint="10 caractères minimum.">
+                  <Input id="new-password" name="password" type="password" required minLength={10} autoComplete="new-password" />
+                </FormField>
+                <FormField label="Confirmer" htmlFor="confirm-password" required>
+                  <Input id="confirm-password" name="confirmPassword" type="password" required minLength={10} autoComplete="new-password" />
+                </FormField>
+              </div>
+            </InlineForm>
+          ) : (
+            <InlineForm action={setInitialPasswordAction} submitLabel="Définir le mot de passe">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField label="Mot de passe" htmlFor="new-password" required hint="10 caractères minimum, avec au moins une lettre et un chiffre.">
+                  <Input id="new-password" name="password" type="password" required minLength={10} autoComplete="new-password" />
+                </FormField>
+                <FormField label="Confirmer" htmlFor="confirm-password" required>
+                  <Input id="confirm-password" name="confirmPassword" type="password" required minLength={10} autoComplete="new-password" />
+                </FormField>
+              </div>
+            </InlineForm>
+          )}
         </CardContent>
       </Card>
 
