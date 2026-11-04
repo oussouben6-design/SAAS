@@ -1,0 +1,31 @@
+node_modules
+.next
+out
+build
+dist
+coverage
+
+# Environnement (ne jamais committer de secrets)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Données locales (base embarquée, fichiers importés)
+.data
+storage
+
+# Artefacts de test
+test-results
+playwright-report
+playwright/.cache
+
+# Divers
+.DS_Store
+*.log
+*.tsbuildinfo
+next-env.d.ts
+
+# Sauvegardes locales (ne jamais committer : contiennent des données réelles)
+backups/
+.data.avant-restauration-*
