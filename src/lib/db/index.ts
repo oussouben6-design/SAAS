@@ -31,9 +31,9 @@ function registerShutdownHooks() {
   if (!isNextServer) return;
 
   const shutdown = (code: number) => {
-    console.info("[organix:db] arrêt du serveur, fermeture de la base…");
+    console.info("[excellence360:db] arrêt du serveur, fermeture de la base…");
     closeDb()
-      .catch((error: unknown) => console.error("[organix:db] fermeture impossible", error))
+      .catch((error: unknown) => console.error("[excellence360:db] fermeture impossible", error))
       .finally(() => process.exit(code));
   };
   process.once("SIGTERM", () => shutdown(143));
@@ -47,7 +47,7 @@ function resolveMode(): "pglite" | "postgres" {
 }
 
 async function bootstrap(executor: SqlExecutor) {
-  await runMigrations(executor, (message) => console.info(`[organix:db] ${message}`));
+  await runMigrations(executor, (message) => console.info(`[excellence360:db] ${message}`));
 }
 
 async function createDb(): Promise<DbClient> {

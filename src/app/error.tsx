@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { BrandMark } from "@/components/layout/auth-shell";
 
 export default function GlobalError({
   error,
@@ -11,11 +12,12 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[organix:ui]", error.digest ?? error.message);
+    console.error("[excellence360:ui]", error.digest ?? error.message);
   }, [error]);
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
+      <BrandMark size="lg" />
       <p className="text-sm font-semibold uppercase tracking-wide text-danger">Erreur</p>
       <h1 className="text-2xl font-semibold tracking-tight">Une erreur est survenue</h1>
       <p className="text-sm text-muted-foreground">

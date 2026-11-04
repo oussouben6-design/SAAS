@@ -95,7 +95,7 @@ export function verifyTotp(
 
 /** URI `otpauth://` : à saisir manuellement ou à convertir en QR code sur le téléphone. */
 export function totpUri(input: { secret: string; account: string; issuer?: string }): string {
-  const issuer = input.issuer ?? "ORGANIX";
+  const issuer = input.issuer ?? "Excellence 360 CRM";
   const label = encodeURIComponent(`${issuer}:${input.account}`);
   const params = new URLSearchParams({
     secret: input.secret,

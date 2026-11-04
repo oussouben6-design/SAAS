@@ -318,7 +318,7 @@ export default async function ReportsPage({
 
       <p className="text-xs text-muted-foreground">
         Rappel : le module financier ne constitue pas un logiciel de comptabilité certifié. Les rapports
-        reflètent uniquement les écritures saisies dans ORGANIX (tables tasks, projects, customers, leads,
+        reflètent uniquement les écritures saisies dans Excellence 360 CRM (tables tasks, projects, customers, leads,
         revenues, expenses, invoices).
       </p>
     </div>

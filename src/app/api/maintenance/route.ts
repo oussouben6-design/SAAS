@@ -56,7 +56,7 @@ async function run(request: NextRequest) {
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error("[organix:maintenance] échec", error);
+    console.error("[excellence360:maintenance] échec", error);
     await closeDb().catch(() => {});
     return NextResponse.json(
       { status: "error", message: "Purge impossible : voir les journaux du serveur." },

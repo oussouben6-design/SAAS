@@ -1,8 +1,11 @@
-# ORGANIX
+# Excellence 360 CRM
 
-Plateforme intégrée de gestion et de pilotage d'organisation : clients, prospection, projets,
-tâches, documents, finances, ressources humaines, partenaires, communication interne,
-collaborateurs, rôles et permissions, rapports et journal d'audit.
+![Logo Excellence 360 CRM — Excellence Services](public/logo-excellence360.jpg)
+
+**Excellence 360 CRM**, par **Excellence Services** — plateforme intégrée de gestion, de relation
+client et de pilotage de la performance : clients, prospection, projets, tâches, documents,
+finances, ressources humaines, partenaires, communication interne, collaborateurs, rôles et
+permissions, rapports et journal d'audit. *Diagnostic en quelques minutes.*
 
 > **État réel du produit.** Tous les modules métier sont **fonctionnels et persistants**
 > (PostgreSQL) : tableau de bord, clients, prospection, projets, tâches, documents, rapports,

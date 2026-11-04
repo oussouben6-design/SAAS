@@ -11,7 +11,7 @@ import { isServerless, SERVERLESS_STORAGE_ERROR } from "@/lib/config/platform";
  * et à un déploiement mono-instance.
  * `supabase` : bucket privé Supabase Storage via l'API REST (`SUPABASE_URL`,
  * `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`). Les fichiers restent privés :
- * la lecture passe par le serveur ORGANIX, jamais par une URL publique.
+ * la lecture passe par le serveur Excellence 360 CRM, jamais par une URL publique.
  *
  * Aucune simulation : si la configuration manque ou si l'appel échoue, une erreur explicite
  * est levée afin que l'utilisateur ne croie pas à un enregistrement réussi.

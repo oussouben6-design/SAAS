@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -7,10 +8,12 @@ import {
   FolderKanban,
   Lock,
   ShieldCheck,
+  Timer,
   Users,
   Wallet,
 } from "lucide-react";
-import { BrandMark } from "@/components/layout/auth-shell";
+import { BrandLogo } from "@/components/layout/auth-shell";
+import { APP_COMPANY, APP_NAME, APP_SLOGAN, LOGO_FULL } from "@/lib/brand";
 import { getSessionUser } from "@/lib/server/context";
 import { Badge } from "@/components/ui/badge";
 import { NAVIGATION } from "@/lib/navigation";
@@ -26,9 +29,8 @@ export default async function LandingPage() {
     <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-card/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-3">
-            <BrandMark />
-            <span className="font-semibold tracking-tight">ORGANIX</span>
+          <Link href="/" aria-label={`${APP_NAME} — accueil`}>
+            <BrandLogo />
           </Link>
           <nav className="flex items-center gap-2">
             {user ? (
@@ -62,23 +64,33 @@ export default async function LandingPage() {
         <section className="mx-auto max-w-6xl px-5 py-16 sm:py-24">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_1fr] lg:items-center">
             <div className="space-y-6">
-              <Badge variant="primary">Plateforme de gestion et de pilotage</Badge>
+              <Image
+                src={LOGO_FULL}
+                alt={`${APP_NAME} — ${APP_COMPANY}. Plateforme intégrée de gestion, de relation client et de pilotage de la performance.`}
+                width={1080}
+                height={720}
+                priority
+                className="w-full max-w-lg rounded-2xl border border-border bg-white shadow-sm"
+              />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand px-3 py-1 text-xs font-bold italic text-brand-foreground">
+                <Timer className="size-3.5" /> {APP_SLOGAN}
+              </span>
               <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
                 Toute votre organisation,
                 <br />
                 dans un seul logiciel.
               </h1>
               <p className="max-w-xl text-base text-muted-foreground">
-                ORGANIX réunit les activités administratives, commerciales, financières, humaines et
-                opérationnelles. Chaque chiffre affiché provient de votre base de données, jamais d&apos;un
-                jeu de démonstration.
+                {APP_NAME}, par {APP_COMPANY}, réunit les activités administratives, commerciales,
+                financières, humaines et opérationnelles. Chaque chiffre affiché provient de votre
+                base de données, jamais d&apos;un jeu de démonstration.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
                   href={user ? "/app" : "/inscription"}
                   className="inline-flex h-11 items-center gap-2 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
                 >
-                  {user ? "Ouvrir mon espace" : "Démarrer avec ORGANIX"} <ArrowRight className="size-4" />
+                  {user ? "Ouvrir mon espace" : "Démarrer avec Excellence 360"} <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/connexion"
@@ -106,7 +118,7 @@ export default async function LandingPage() {
                   <span className="size-2 rounded-full bg-danger/60" />
                   <span className="size-2 rounded-full bg-warning/60" />
                   <span className="size-2 rounded-full bg-success/60" />
-                  <span className="ml-2 text-xs text-muted-foreground">organix · tableau de bord</span>
+                  <span className="ml-2 text-xs text-muted-foreground">excellence360 · tableau de bord</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-4">
                   {[
@@ -208,7 +220,10 @@ export default async function LandingPage() {
 
       <footer className="border-t border-border py-8">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p>ORGANIX — version pilote. Application en cours de développement itératif.</p>
+          <p>
+            {APP_NAME} — par {APP_COMPANY}. Plateforme intégrée de gestion, de relation client et
+            de pilotage de la performance.
+          </p>
           <p>Les modules non finalisés sont signalés dans l&apos;interface.</p>
         </div>
       </footer>

@@ -1,4 +1,4 @@
-# PROJECT STATUS — ORGANIX
+# PROJECT STATUS — Excellence 360 CRM
 
 Dernière mise à jour : **2 novembre 2026** (branche `arena/2ac590d2-saas`).
 

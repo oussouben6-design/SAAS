@@ -49,7 +49,7 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
   if (transport === "console") {
     const isProduction = process.env.NODE_ENV === "production";
     console.info(
-      `[organix:mail] ${message.kind} -> ${message.to} | ${message.subject} | ${message.actionUrl}`,
+      `[excellence360:mail] ${message.kind} -> ${message.to} | ${message.subject} | ${message.actionUrl}`,
     );
     return {
       delivered: false,
@@ -73,7 +73,7 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
     return sendWithResend(message);
   }
 
-  console.warn(`[organix:mail] Transport « ${transport} » non implémenté : message non envoyé.`);
+  console.warn(`[excellence360:mail] Transport « ${transport} » non implémenté : message non envoyé.`);
   return {
     delivered: false,
     transport,
@@ -84,7 +84,7 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
 const MAIL_TEMPLATES: Record<MailKind, { heading: string; cta: string }> = {
   email_verification: { heading: "Vérifiez votre adresse e-mail", cta: "Vérifier mon adresse" },
   password_reset: { heading: "Réinitialisation du mot de passe", cta: "Choisir un nouveau mot de passe" },
-  invitation: { heading: "Invitation à rejoindre ORGANIX", cta: "Accepter l'invitation" },
+  invitation: { heading: "Invitation à rejoindre Excellence 360 CRM", cta: "Accepter l'invitation" },
 };
 
 export function renderMail(message: MailMessage): { html: string; text: string } {
@@ -102,22 +102,30 @@ export function renderMail(message: MailMessage): { html: string; text: string }
 
   const html = `<!doctype html>
 <html lang="fr">
-  <body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#f6f7f9;padding:24px;color:#111827">
-    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #e5e7eb">
-      <p style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#059669;margin:0 0 16px">ORGANIX</p>
+  <body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#eef4fb;padding:24px;color:#0c2447">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px;border:1px solid #d9e6f3">
+      <p style="font-size:15px;font-weight:800;font-style:italic;letter-spacing:.02em;color:#00285e;margin:0">
+        Excellence <span style="color:#0057a8">360</span>
+        <span style="background:#00285e;color:#ffffff;border-radius:5px;padding:2px 6px;font-size:11px;margin-left:4px">CRM</span>
+      </p>
+      <div style="height:3px;background:#ffc000;border-radius:2px;margin:14px 0 20px"></div>
       <h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(template.heading)}</h1>
       ${lines.map((line) => `<p style="font-size:14px;line-height:1.6;margin:0 0 12px">${escapeHtml(line)}</p>`).join("")}
       <p style="margin:24px 0">
-        <a href="${escapeHtml(message.actionUrl)}" style="display:inline-block;background:#047857;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:14px">
+        <a href="${escapeHtml(message.actionUrl)}" style="display:inline-block;background:#0057a8;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:14px">
           ${escapeHtml(template.cta)}
         </a>
       </p>
-      <p style="font-size:12px;color:#6b7280;margin:0">
+      <p style="font-size:12px;color:#587391;margin:0">
         Si le bouton ne fonctionne pas, copiez ce lien :<br />
         <span style="word-break:break-all">${escapeHtml(message.actionUrl)}</span>
       </p>
-      <p style="font-size:12px;color:#6b7280;margin:16px 0 0">
+      <p style="font-size:12px;color:#587391;margin:16px 0 0">
         Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.
+      </p>
+      <p style="font-size:11px;color:#587391;margin:20px 0 0;border-top:1px solid #d9e6f3;padding-top:12px">
+        Excellence 360 CRM — par Excellence Services. Plateforme intégrée de gestion, de relation
+        client et de pilotage de la performance.
       </p>
     </div>
   </body>
@@ -165,7 +173,7 @@ async function sendWithResend(message: MailMessage): Promise<MailResult> {
     });
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
-      console.error(`[organix:mail] Resend a refusé l'envoi (${response.status}): ${detail.slice(0, 300)}`);
+      console.error(`[excellence360:mail] Resend a refusé l'envoi (${response.status}): ${detail.slice(0, 300)}`);
       return {
         delivered: false,
         transport: "resend",
@@ -174,7 +182,7 @@ async function sendWithResend(message: MailMessage): Promise<MailResult> {
     }
     return { delivered: true, transport: "resend" };
   } catch (error) {
-    console.error("[organix:mail] Échec réseau vers Resend", error);
+    console.error("[excellence360:mail] Échec réseau vers Resend", error);
     return {
       delivered: false,
       transport: "resend",

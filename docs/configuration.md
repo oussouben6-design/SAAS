@@ -41,7 +41,7 @@ une nouvelle.
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
 | `MAIL_TRANSPORT` | `console` | `console` (journalise le lien), `none`, `resend` (envoi réel), `smtp` (non implémenté) |
-| `MAIL_FROM` | — | Expéditeur vérifié (ex. `ORGANIX <no-reply@votre-domaine>`), requis pour `resend` |
+| `MAIL_FROM` | — | Expéditeur vérifié (ex. `Excellence 360 CRM <no-reply@votre-domaine>`), requis pour `resend` |
 | `RESEND_API_KEY` | — | Clé API Resend, requise pour `resend` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | — | **Non implémenté** : `smtp` renvoie un avertissement explicite |
 
@@ -117,7 +117,7 @@ répertoire est refusée.
 
 Mode `supabase` : les fichiers sont écrits, lus et supprimés via l'API REST de Storage avec la clé
 service_role ; le bucket reste **privé** (aucune URL publique, la lecture passe par le serveur
-ORGANIX qui vérifie les permissions `documents:read`). **Non vérifié contre un projet Supabase réel**
+Excellence 360 CRM qui vérifie les permissions `documents:read`). **Non vérifié contre un projet Supabase réel**
 dans cet environnement (pas de réseau sortant) : la requête est couverte par des tests unitaires avec
 `fetch` simulé. Toute erreur (HTTP, configuration incomplète) est remontée à l'utilisateur.
 

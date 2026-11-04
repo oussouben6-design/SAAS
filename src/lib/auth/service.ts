@@ -173,10 +173,10 @@ async function issueToken(
     kind: purpose,
     subject:
       purpose === "email_verification"
-        ? "ORGANIX — Vérifiez votre adresse e-mail"
+        ? "Excellence 360 CRM — Vérifiez votre adresse e-mail"
         : purpose === "password_reset"
-          ? "ORGANIX — Réinitialisation de votre mot de passe"
-          : "ORGANIX — Invitation à rejoindre une organisation",
+          ? "Excellence 360 CRM — Réinitialisation de votre mot de passe"
+          : "Excellence 360 CRM — Invitation à rejoindre une organisation",
     actionUrl: `${base}${path}`,
     lines: fullName ? [`Bonjour ${fullName},`] : undefined,
   });

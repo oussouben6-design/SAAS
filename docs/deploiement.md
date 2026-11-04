@@ -45,7 +45,7 @@ Exemple Nginx minimal :
 ```nginx
 server {
   listen 443 ssl http2;
-  server_name organix.example.com;
+  server_name excellence360.example.com;
   client_max_body_size 12m;
   location / {
     proxy_pass http://127.0.0.1:3000;
@@ -78,12 +78,12 @@ DATABASE_MODE=postgres
 DATABASE_URL=postgresql://...           # pooler Supabase recommandé
 DATABASE_SSL=true
 AUTO_MIGRATE=false                      # lancer db:migrate dans le pipeline de déploiement
-APP_URL=https://organix.example.com
+APP_URL=https://excellence360.example.com
 AUTH_ALLOW_REGISTRATION=false           # invitation uniquement (recommandé)
 AUTH_REQUIRE_EMAIL_VERIFICATION=false   # true seulement si un transport d'e-mail est opérationnel
 MAIL_TRANSPORT=console                   # ou `resend` avec RESEND_API_KEY + MAIL_FROM
 STORAGE_DRIVER=local                     # ou `supabase` (bucket privé)
-ORGANIX_STORAGE_DIR=/var/lib/organix/storage
+ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
 ```
 
 ## Liste de vérification avant d'annoncer « en production »

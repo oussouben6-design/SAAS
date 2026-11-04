@@ -1,12 +1,12 @@
 # Déploiement sur Supabase (offre gratuite)
 
-ORGANIX utilise **PostgreSQL** et **Supabase Storage** : les mêmes migrations
+Excellence 360 CRM utilise **PostgreSQL** et **Supabase Storage** : les mêmes migrations
 (`supabase/migrations/*.sql`) s'appliquent en local (PGlite) et sur Supabase. Ce guide couvre
 uniquement l'offre **gratuite** : aucun service payant n'est requis.
 
 ## 1. Ce que fournit l'offre gratuite
 
-| Ressource | Offre gratuite | Usage ORGANIX |
+| Ressource | Offre gratuite | Usage Excellence 360 CRM |
 | --- | --- | --- |
 | Base PostgreSQL | 500 Mo | Données métier (largement suffisant pour une PME) |
 | Storage privé | 1 Go | Documents (bucket `documents`, limite 10 Mo/fichier) |
@@ -98,7 +98,7 @@ MAX_UPLOAD_BYTES=10485760
 
 ## 6. Authentification et e-mails
 
-- ORGANIX gère sa propre authentification (scrypt + sessions en base) : **n'activez pas** Supabase
+- Excellence 360 CRM gère sa propre authentification (scrypt + sessions en base) : **n'activez pas** Supabase
   Auth, il n'est pas utilisé.
 - Pour la vérification d'adresse en production, configurez un transport réel (`MAIL_TRANSPORT=resend`
   + `RESEND_API_KEY`), puis `AUTH_REQUIRE_EMAIL_VERIFICATION=true`.
@@ -112,7 +112,7 @@ Deux mécanismes gratuits :
 1. **pg_cron** (Extensions → activer `pg_cron`) puis, une fois :
 
    ```sql
-   select cron.schedule('organix-keepalive', '0 */6 * * *', $$ select 1 $$);
+   select cron.schedule('excellence360-keepalive', '0 */6 * * *', $$ select 1 $$);
    ```
 
    Cette tâche entretient l'activité de la base ; elle n'écrit aucune donnée.
@@ -127,7 +127,7 @@ minutes), puis vérifier `/api/health`.
 
 ```bash
 # quotidien, hors du serveur applicatif
-pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f /var/backups/organix-$(date +%F).dump
+pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f /var/backups/excellence360-$(date +%F).dump
 ```
 
 - Copiez l'archive **hors de Supabase** (stockage objet, autre machine) et chiffrez-la.

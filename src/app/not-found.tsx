@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/layout/auth-shell";
 
 export default function NotFound() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-4 px-5 text-center">
+      <BrandMark size="lg" />
       <p className="text-sm font-semibold uppercase tracking-wide text-primary">Erreur 404</p>
       <h1 className="text-2xl font-semibold tracking-tight">Page introuvable</h1>
       <p className="text-sm text-muted-foreground">

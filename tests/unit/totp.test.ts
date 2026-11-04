@@ -53,8 +53,8 @@ describe("TOTP (RFC 6238)", () => {
     const uri = new URL(totpUri({ secret, account: "admin@exemple.com" }));
     expect(uri.protocol).toBe("otpauth:");
     expect(uri.searchParams.get("secret")).toBe(secret);
-    expect(uri.searchParams.get("issuer")).toBe("ORGANIX");
+    expect(uri.searchParams.get("issuer")).toBe("Excellence 360 CRM");
     expect(uri.searchParams.get("period")).toBe("30");
-    expect(decodeURIComponent(uri.pathname)).toBe("/ORGANIX:admin@exemple.com");
+    expect(decodeURIComponent(uri.pathname)).toBe("/Excellence 360 CRM:admin@exemple.com");
   });
 });

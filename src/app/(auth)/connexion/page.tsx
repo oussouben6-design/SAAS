@@ -14,7 +14,7 @@ export default async function LoginPage() {
   return (
     <AuthShell
       title="Connexion"
-      subtitle="Accédez à votre espace de travail ORGANIX."
+      subtitle="Accédez à votre espace de travail Excellence 360 CRM."
       footer={
         <>
           Pas encore de compte ?{" "}

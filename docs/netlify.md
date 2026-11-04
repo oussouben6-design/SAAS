@@ -1,6 +1,6 @@
 # Déploiement sur Netlify
 
-ORGANIX est une application **Next.js 15** (App Router, Server Actions, route handlers) : elle
+Excellence 360 CRM est une application **Next.js 15** (App Router, Server Actions, route handlers) : elle
 fonctionne sur Netlify via le runtime officiel `@netlify/plugin-nextjs`, détecté automatiquement.
 
 Netlify est une plateforme **serverless** : elle ne fournit ni disque persistant, ni base embarquée.
@@ -117,14 +117,14 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 
 ## 7. Sauvegardes (Netlify n'en fournit pas)
 
-- Base : `pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f organix-$(date +%F).dump`
+- Base : `pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f excellence360-$(date +%F).dump`
   planifié sur une machine ou dans un workflow GitHub, copie **hors Supabase**.
 - Fichiers : copie du bucket `documents` via l'API Storage (clé service_role).
 - Test de restauration trimestriel : projet Supabase de test + `pg_restore` + `npm run db:status`.
 
 ## 8. Limites Netlify à connaître
 
-| Limite (offre gratuite) | Valeur | Conséquence pour ORGANIX |
+| Limite (offre gratuite) | Valeur | Conséquence pour Excellence 360 CRM |
 | --- | --- | --- |
 | Durée d'une fonction synchrone | 10 s (jusqu'à 26 s selon l'offre) | Les exports volumineux et `db:backup` ne doivent pas passer par une requête HTTP |
 | Corps de requête | ~6 Mo | `MAX_UPLOAD_BYTES=5242880` ; au-delà, prévoir un envoi direct vers Storage |

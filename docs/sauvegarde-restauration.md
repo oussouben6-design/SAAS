@@ -19,12 +19,12 @@ La base ne sauvegarde **pas** les fichiers, et inversement : les deux sont néce
 ```bash
 npm run db:backup                       # copie à froid + manifeste + empreintes SHA-256
 npm run db:backup -- --verifier         # + ouvre la copie dans une instance jetable et compte
-npm run db:backup -- --out /mnt/sauvegardes/organix
-npm run db:restore -- --depuis backups/organix-AAAA... --yes --force
+npm run db:backup -- --out /mnt/sauvegardes/excellence360
+npm run db:restore -- --depuis backups/excellence360-AAAA... --yes --force
 ```
 
 - `db:backup` refuse de s'exécuter sur un répertoire vide ou absent ; il écrit
-  `backups/organix-<horodatage>/` avec `manifest.json`, `database/` et `storage/`.
+  `backups/excellence360-<horodatage>/` avec `manifest.json`, `database/` et `storage/`.
 - `db:restore` contrôle **toutes** les empreintes avant d'écrire, refuse d'écraser une base
   existante sans `--force`, et conserve l'ancienne base sous `<cible>.avant-restauration-<date>`.
 - En mode `postgres`, `db:backup` exige le binaire `pg_dump` (paquet `postgresql-client`) et produit
@@ -51,7 +51,7 @@ Restauration : 9/9 migrations, 6 profils, 5 clients, 3 factures, 5 employés apr
 
 ```bash
 pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges \
-  --file="organix-$(date +%Y%m%d-%H%M).dump"
+  --file="excellence360-$(date +%Y%m%d-%H%M).dump"
 ```
 
 Conservez au moins 7 exports quotidiens + 4 hebdomadaires dans un stockage distinct (coffre ou
@@ -62,21 +62,21 @@ stockage objet chiffré). Vérifiez la taille et l'intégrité (`pg_restore --li
 ```bash
 # tous les jours à 02:00 (crontab)
 pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges \
-  --file="/var/backups/organix/organix-$(date +%Y%m%d).dump"
-find /var/backups/organix -name '*.dump' -mtime +30 -delete
+  --file="/var/backups/excellence360/excellence360-$(date +%Y%m%d).dump"
+find /var/backups/excellence360 -name '*.dump' -mtime +30 -delete
 ```
 
 Plus le code esquissé ci-dessous pour les fichiers :
 
 ```bash
-rsync -a --delete /var/lib/organix/storage/ /var/backups/organix/storage/
+rsync -a --delete /var/lib/excellence360/storage/ /var/backups/excellence360/storage/
 ```
 
 ## Sauvegarde — fichiers
 
 ```bash
 # archive datée, à copier hors du serveur
-tar czf "organix-storage-$(date +%Y%m%d).tar.gz" -C "$ORGANIX_STORAGE_DIR" .
+tar czf "excellence360-storage-$(date +%Y%m%d).tar.gz" -C "$ORGANIX_STORAGE_DIR" .
 ```
 
 Chiffrez l'archive (elle contient des documents internes) : `age`, `gpg` ou le chiffrement de
@@ -87,8 +87,8 @@ votre stockage objet. Testez la restauration d'un fichier au hasard.
 ### Sur une base neuve (scénario sinistre)
 
 ```bash
-createdb organix_restaure
-pg_restore --dbname=postgresql://.../organix_restaure --no-owner --no-privileges fichier.dump
+createdb excellence360_restaure
+pg_restore --dbname=postgresql://.../excellence360_restaure --no-owner --no-privileges fichier.dump
 # vérifier la restauration
 psql "$URL_RESTAURE" -c "select count(*) as organisations from organizations;"
 psql "$URL_RESTAURE" -c "select count(*) as politiques_rls from pg_policies where schemaname = 'public';"
@@ -115,9 +115,9 @@ Copie de répertoire à froid (application arrêtée) :
 
 ```bash
 # sauvegarde
-tar czf organix-dev-backup.tar.gz .data/pglite .data/storage
+tar czf excellence360-dev-backup.tar.gz .data/pglite .data/storage
 # restauration
-tar xzf organix-dev-backup.tar.gz
+tar xzf excellence360-dev-backup.tar.gz
 ```
 
 Ne copiez jamais `.data/pglite` pendant que le serveur ou un script tourne (état incohérent).
@@ -139,11 +139,11 @@ procédure est celle d'une restauration normale, sur la dernière sauvegarde val
 
 1. Arrêter l'application (`Ctrl+C`, jamais `kill -9`).
 2. `ls -1 backups/ | tail -3` puis `npm run db:backup -- --verifier` sur une copie si un doute existe.
-3. `npm run db:restore -- --depuis backups/organix-AAAA... --yes --force` — l'ancienne base est
+3. `npm run db:restore -- --depuis backups/excellence360-AAAA... --yes --force` — l'ancienne base est
    conservée dans `.data/pglite.avant-restauration-<horodatage>`.
 4. `npm run db:migrate` puis, pour une démonstration, `npm run db:seed -- --force`.
 5. Contrôler avec `npm run db:status`, redémarrer, puis `curl /api/health` (doit renvoyer `ok`).
 6. Supprimer le répertoire `avant-restauration` une fois la reprise vérifiée.
 
-Prévention : le verrou `.organix-instance.lock` empêche deux processus simultanés, et l'arrêt
+Prévention : le verrou `.excellence360-instance.lock` empêche deux processus simultanés, et l'arrêt
 `SIGTERM` ferme proprement la base.

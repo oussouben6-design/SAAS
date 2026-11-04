@@ -32,7 +32,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (error instanceof AppError) {
       return NextResponse.json({ error: error.message }, { status: error.status });
     }
-    console.error("[organix:documents]", error);
+    console.error("[excellence360:documents]", error);
     return NextResponse.json({ error: "Erreur interne." }, { status: 500 });
   }
 }
