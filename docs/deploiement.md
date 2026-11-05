@@ -81,6 +81,9 @@ AUTO_MIGRATE=false                      # lancer db:migrate dans le pipeline de 
 APP_URL=https://excellence360.example.com
 AUTH_ALLOW_REGISTRATION=false           # invitation uniquement (recommandé)
 AUTH_REQUIRE_EMAIL_VERIFICATION=false   # true seulement si un transport d'e-mail est opérationnel
+MFA_ENCRYPTION_KEY=                      # openssl rand -base64 32 (recommandé)
+GOOGLE_CLIENT_ID=                        # optionnel : OAuth Google, à définir avec le secret
+GOOGLE_CLIENT_SECRET=                    # redirection : <APP_URL>/api/auth/google/callback
 MAIL_TRANSPORT=console                   # ou `resend` avec RESEND_API_KEY + MAIL_FROM
 STORAGE_DRIVER=local                     # ou `supabase` (bucket privé)
 ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
@@ -89,11 +92,13 @@ ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `13/13` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `14/14` migrations
 - [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée
 - [ ] HTTPS actif, `APP_URL` cohérent, cookies `Secure`
+- [ ] Si Google est activé : `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` définis ensemble et
+  `<APP_URL>/api/auth/google/callback` déclaré dans Google Cloud ; connexion réelle testée
 - [ ] Compte « Administrateur principal » nominatif créé, mot de passe fort, 2FA côté hébergeur si possible
 - [ ] Aucune donnée de démonstration en base (`select count(*) from organizations where is_demo;` → 0)
 - [ ] Répertoire de stockage persistant, sauvegardé, droits restreints

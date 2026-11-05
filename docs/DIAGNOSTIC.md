@@ -146,7 +146,7 @@ contient pas de règle métier.
 
 ## 6. Schéma initial de base de données
 
-**48 tables**, **127 politiques RLS**, 13 migrations idempotentes.
+**48 tables**, **127 politiques RLS**, 13 migrations idempotentes *(état initial du diagnostic, avant la migration 0014 ; état courant : voir `PROJECT_STATUS.md`)*.
 
 | Domaine | Tables |
 | --- | --- |

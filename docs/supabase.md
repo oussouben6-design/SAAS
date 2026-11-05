@@ -53,8 +53,8 @@ AUTO_MIGRATE=false           # les migrations se lancent explicitement
 ## 4. Appliquer le schéma
 
 ```bash
-npm run db:migrate     # applique 0001 → 0012 (idempotent)
-npm run db:status      # doit afficher 13/13 migrations et « Bascule de rôle applicatif : OK »
+npm run db:migrate     # applique 0001 → 0014 (idempotent)
+npm run db:status      # doit afficher 14/14 migrations et « Bascule de rôle applicatif : OK »
 ```
 
 La migration **0012** est indispensable sur Supabase : PostgreSQL 16 a dissocié les options
@@ -132,18 +132,18 @@ pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f /var/backups/excellenc
 
 - Copiez l'archive **hors de Supabase** (stockage objet, autre machine) et chiffrez-la.
 - Testez une restauration par trimestre sur un projet Supabase de test (gratuit) :
-  `pg_restore` puis `npm run db:status` → 13/13 migrations.
+  `pg_restore` puis `npm run db:status` → 14/14 migrations.
 - Les documents du bucket ne sont pas dans le dump : sauvegardez-les via l'API Storage
   (`SUPABASE_SERVICE_ROLE_KEY`) ou `supabase storage cp`.
 
 ## 9. Checklist de mise en service
 
 - [ ] `DATABASE_MODE=postgres`, `DATABASE_URL` = pooler (port 6543), `DATABASE_POOL_MAX` ≤ 5
-- [ ] `npm run db:migrate` → `npm run db:status` : **13/13**, « Bascule de rôle applicatif : OK »
+- [ ] `npm run db:migrate` → `npm run db:status` : **14/14**, « Bascule de rôle applicatif : OK »
 - [ ] `npm run admin:create` (compte réel propriétaire), **aucun** `db:seed` en production
 - [ ] `MFA_ENCRYPTION_KEY`, `APP_URL`, transport e-mail réel configurés
 - [ ] Bucket `documents` privé + `STORAGE_DRIVER=supabase` + test d'upload/téléchargement réel
 - [ ] `npm run build` puis `npm run smoke -- --url https://votre-domaine` → 20/20
 - [ ] `/api/health` branché sur une supervision externe (gratuite) + keep-alive
 - [ ] Sauvegarde `pg_dump` planifiée, copie hors Supabase, restauration testée
-- [ ] RLS vérifiée : `npm run db:status` → 48/48 tables forcées ; tests `npm test` verts
+- [ ] RLS vérifiée : `npm run db:status` → 49/49 tables forcées ; tests `npm test` verts

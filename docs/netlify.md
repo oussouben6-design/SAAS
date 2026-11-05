@@ -20,7 +20,7 @@ l'application refuse explicitement de démarrer dans ce cas
 
 1. Projet Supabase créé, mot de passe de base enregistré (`docs/supabase.md` §2-3).
 2. Schéma appliqué : `npm run db:migrate` avec `DATABASE_MODE=postgres` et `DATABASE_URL` sur le
-   pooler → `npm run db:status` doit afficher **13/13 migrations** et
+   pooler → `npm run db:status` doit afficher **14/14 migrations** et
    « Bascule de rôle applicatif : OK ».
 3. Bucket `documents` créé, **privé**, limite 10 Mo.
 4. Compte réel créé : `npm run admin:create -- --email … --name … --org …`
@@ -55,12 +55,17 @@ l'application refuse explicitement de démarrer dans ce cas
 | `SUPABASE_STORAGE_BUCKET` | `documents` | Bucket privé |
 | `MAX_UPLOAD_BYTES` | `5242880` | **5 Mo** : les fonctions Netlify limitent le corps de requête (~6 Mo) |
 | `APP_URL` | `https://votre-site.netlify.app` | Puis le domaine personnalisé |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | identifiants OAuth Google | Optionnels, à définir ensemble ; voir `docs/configuration.md` |
 | `MFA_ENCRYPTION_KEY` | sortie de `openssl rand -base64 32` | Chiffre les secrets TOTP |
 | `MAINTENANCE_SECRET` | sortie de `openssl rand -hex 32` | Protège `/api/maintenance` |
 | `MAIL_TRANSPORT` | `resend` | `console` n'envoie rien en production |
 | `RESEND_API_KEY` / `MAIL_FROM` | clé Resend + expéditeur vérifié | Gratuit (3 000 e-mails/mois) |
 | `AUTH_ALLOW_REGISTRATION` | `true` (public) ou `false` (sur invitation) | |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true` seulement si Resend est configuré | Sinon les comptes resteraient bloqués |
+
+Pour la connexion Google, déclarez aussi dans Google Cloud l'URI de redirection exacte
+`<APP_URL>/api/auth/google/callback` (avec le domaine Netlify ou le domaine personnalisé), puis
+testez une connexion réelle après le déploiement.
 
 En ligne de commande (facultatif) :
 
@@ -81,7 +86,7 @@ Puis **Deploys → Trigger deploy → Clear cache and deploy site**.
 
 ```bash
 curl -s https://votre-site.netlify.app/api/health
-# {"status":"ok","driver":"postgres","migrations":{"applied":13,"available":13},…}
+# {"status":"ok","driver":"postgres","migrations":{"applied":14,"available":14},…}
 
 npm run smoke -- --url https://votre-site.netlify.app \
                   --email vous@votre-organisation.com --password '…'
@@ -148,7 +153,7 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 
 ## 10. Checklist de mise en service
 
-- [ ] Migrations appliquées (13/13) et `db:status` : bascule de rôle **OK**, 48/48 RLS forcée
+- [ ] Migrations appliquées (14/14) et `db:status` : bascule de rôle **OK**, 49/49 RLS forcée
 - [ ] Compte propriétaire réel créé (`admin:create`) ; aucun `db:seed` en production
 - [ ] Variables d'environnement complètes (`npm run env:check` sans erreur)
 - [ ] `MAX_UPLOAD_BYTES=5242880` (limite Netlify)
