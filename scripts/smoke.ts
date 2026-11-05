@@ -107,6 +107,6 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  console.error(`[organix:smoke] ÉCHEC : ${(error as Error).message}`);
+  console.error(`[excellence360:smoke] ÉCHEC : ${(error as Error).message}`);
   process.exitCode = 1;
 });

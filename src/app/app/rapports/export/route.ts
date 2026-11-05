@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         task.comments_count,
       ]),
     );
-    return csvResponse(`organix-taches-${stamp}.csv`, csv);
+    return csvResponse(`excellence360-taches-${stamp}.csv`, csv);
   }
 
   if (type === "projects") {
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
         project.progress,
       ]),
     );
-    return csvResponse(`organix-projets-${stamp}.csv`, csv);
+    return csvResponse(`excellence360-projets-${stamp}.csv`, csv);
   }
 
   if (type === "finance") {
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
       ["Catégorie", "Type", "Montant (unité mineure)"],
       reports.finance.byCategory.map((row) => [row.name, row.kind, row.amount]),
     );
-    return csvResponse(`organix-finances-${stamp}.csv`, csv);
+    return csvResponse(`excellence360-finances-${stamp}.csv`, csv);
   }
 
   throw new AppError("validation", "Type d'export inconnu.");

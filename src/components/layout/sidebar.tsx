@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -24,6 +25,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { NavItem } from "@/lib/navigation";
+import { APP_NAME, LOGO_EMBLEM } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { ModuleKey } from "@/lib/permissions/catalog";
@@ -70,11 +72,17 @@ export function SidebarContent({
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-2.5 px-4 py-4">
-        <span className="inline-flex size-9 items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground">
-          O
-        </span>
+        <Image
+          src={LOGO_EMBLEM}
+          alt={`Emblème ${APP_NAME}`}
+          width={72}
+          height={72}
+          className="size-9 shrink-0 rounded-full bg-white object-contain"
+        />
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium uppercase tracking-wider text-sidebar-muted">ORGANIX</p>
+          <p className="truncate text-[11px] font-bold uppercase tracking-wider text-brand">
+            Excellence 360 CRM
+          </p>
           <button
             type="button"
             onClick={() => setOrgOpen((value) => !value)}
@@ -137,7 +145,7 @@ export function SidebarContent({
                       )}
                       aria-current={active ? "page" : undefined}
                     >
-                      <Icon className="size-4 shrink-0" />
+                      <Icon className={cn("size-4 shrink-0", active && "text-brand")} />
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.status === "development" ? (
                         <span className="rounded bg-white/10 px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide text-sidebar-muted">
@@ -180,7 +188,7 @@ export function SidebarContent({
         <p className="flex items-center gap-1.5">
           <ShieldCheck className="size-3.5" /> Session sécurisée · RLS active
         </p>
-        <p className="mt-1 opacity-70">ORGANIX v0.1 — pilote</p>
+        <p className="mt-1 opacity-70">Excellence 360 CRM v0.1 — par Excellence Services</p>
       </div>
     </div>
   );

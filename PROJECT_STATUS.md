@@ -1,6 +1,6 @@
-# PROJECT STATUS — ORGANIX
+# PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **2 novembre 2026** (branche `arena/2ac590d2-saas`).
+Dernière mise à jour : **5 novembre 2026** (branche `arena/df69bde3-saas`).
 
 Ce document décrit l'état **réellement vérifié** du produit. Aucune fonctionnalité n'y est déclarée
 comme opérationnelle sans test automatisé ou vérification HTTP associée. Les éléments non terminés
@@ -12,18 +12,18 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | 13/13 appliquées sans erreur (PGlite), idempotentes |
-| Tables métier | 48 |
-| Politiques RLS | 127 (RLS activée **et forcée** sur toutes les tables métier) |
+| Migrations SQL | 14/14 appliquées sans erreur (PGlite), idempotentes |
+| Tables métier | 49 |
+| Politiques RLS | 128 (RLS activée **et forcée** sur les 49 tables publiques) |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **111 tests / 111** en 17 fichiers (~65 s) |
-| `npm run build` | ✅ build de production, 45 routes ; `next start` vérifié avec en-têtes CSP/HSTS |
+| `npm test` (Vitest) | ✅ **130 tests / 130** en 19 fichiers (~66 s) |
+| `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
-| Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (16 règles, testé) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
-| Supervision / vérification | ✅ `GET /api/health` (200, 13/13 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
-| CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
+| Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
+| Supervision / vérification | ✅ `GET /api/health` (200, 14/14 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
+| CI GitHub Actions | ✅ **verte sur la PR #4** (run `42067007177` : types, lint, 128 tests, build — 2 min 41 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
 | Déploiement | ⚠️ **Aucun** — voir `docs/deploiement.md` |
@@ -36,7 +36,7 @@ sont explicitement listés.
 | --- | --- | --- | --- |
 | Supabase (offre gratuite) | ✅ Préparé et vérifié | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` disponibles. Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma **non encore appliqué** : requiert le mot de passe de la base (pooler) |
 | Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
-| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours) | Activation 2FA facultative ; transport SMTP non implémenté |
+| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours), **connexion Google OAuth/OIDC** (PKCE, vérification du jeton, liaison de compte, MFA conservée) | Activation 2FA facultative ; transport SMTP non implémenté ; identifiants Google réels à configurer pour une connexion effective |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
 | Collaborateurs & invitations | ✅ Opérationnel | Invitation avec jeton, acceptation, rôles multiples, suspension, protection du propriétaire | Renvoi d'invitation en un clic |
 | Rôles & permissions | ✅ Opérationnel | Matrice 16×7 éditable, verrouillage du rôle propriétaire, audit | Duplication de rôle |
@@ -66,13 +66,14 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 17 passed (17) · Tests 111 passed (111) · ~65 s
-npm run build           → succès, 45 routes
+npm test                → Test Files 19 passed (19) · Tests 130 passed (130) · ~66 s
+npm run build           → succès (vérifié le 5 novembre 2026)
+Netlify (simulation)     → env:check + build OK avec valeurs factices, sans connexion externe
 npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
-npm run db:backup -- --verifier → empreintes OK, 48 tables, 127 politiques RLS
+npm run db:backup -- --verifier → empreintes OK, 49 tables, 128 politiques RLS
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
-npm run db:migrate      → 13/13 migrations, 48 tables, 127 politiques RLS
+npm run db:migrate      → 14/14 migrations, 49 tables, 128 politiques RLS
 ```
 
 | Fichier | Couverture |
@@ -84,6 +85,8 @@ npm run db:migrate      → 13/13 migrations, 48 tables, 127 politiques RLS
 | `tests/unit/integrations.test.ts` | E-mails (console, Resend avec `fetch` simulé, échec HTTP, échappement HTML), stockage local (écriture/lecture/suppression, anti-traversée), stockage Supabase (requête REST, configuration incomplète, erreur 404) |
 | `tests/integration/security.test.ts` | Isolation inter-organisations, insertion croisée refusée, membre suspendu sans accès, RH inaccessible au lecteur, audit par organisation |
 | `tests/integration/auth.test.ts` | Hachage scrypt, cycle de session, **liste et révocation de sessions (y compris refus de révoquer celle d'un autre utilisateur)**, réinitialisation, vérification e-mail |
+| `tests/unit/google.test.ts` | Vecteur PKCE RFC 7636, URL d'autorisation, jetons OIDC signés RSA : signature, émetteur, audience, expiration, nonce et e-mail vérifié |
+| `tests/integration/google-auth.test.ts` | Création sans mot de passe, liaison par e-mail puis par `sub`, compte inactif, inscriptions fermées, MFA après Google |
 | `tests/integration/workflows.test.ts` | Projets/jalons, tâches et commentaires, conversion prospect → client, invitation → acceptation → rôles, protection du propriétaire, drapeau `is_demo` |
 | `tests/integration/finance.test.ts` | Numérotation, totaux HT/TVA/TTC, encaissement partiel → payé, refus de dépassement, facture payée verrouillée, transition invalide, devis → facture (une seule fois), dépenses (auto-validation interdite, suppression bloquée) |
 | `tests/integration/hr.test.ts` | Employés (CRUD, archivage, date de fin invalide), contrats, congés (chevauchement, approbation → statut employé, nouvelle décision refusée), pointage unique par jour, statut invalide |
@@ -92,8 +95,8 @@ npm run db:migrate      → 13/13 migrations, 48 tables, 127 politiques RLS
 **Non exécutés** : les tests Playwright (`tests/e2e/*.spec.ts`) — navigateurs impossibles à
 télécharger dans cet environnement.
 
-**CI** : exécutée sur GitHub le 2 novembre 2026 (run `41447870753`) — job « Types, lint, tests et
-build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@v5`, `setup-node@v5`).
+**CI** : dernière exécution sur la PR #4 (run `42067007177`) — job « Types, lint, tests et build »
+**vert en 2 min 41 s**, avec 128 tests. Les actions utilisent `checkout@v5` et `setup-node@v5`.
 
 ---
 
@@ -112,9 +115,12 @@ build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@
   - `demo.lecteur` : `/app/rh`, `/app/finances`, `/app/partenaires` → 307.
   - `demo.gestionnaire` : `/app/rh`, `/app/partenaires`, `/app/communication` → 200 ;
     `/app/finances` → 307.
+- Flux Google vérifié en HTTP avec des identifiants de démonstration : bouton sur connexion/inscription,
+  redirection OAuth avec PKCE/state/nonce, refus d'un `state` falsifié et gestion de l'annulation (7/7) ;
+  non-régression de la connexion par mot de passe (4/4). **Un compte Google réel reste à tester.**
 - `npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
 npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
-  métier, `/api/health` → `ok`, 13/13 migrations).
+  métier, `/api/health` → `ok`, 14/14 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
   (`ArrayBuffer is not detachable`) : spécifique à Next.js dev + PGlite, disparaît au rechargement ;
@@ -157,7 +163,9 @@ npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, 
    migration : symptôme observé = permission nouvellement créée « absente »). Documenté dans
    `docs/installation.md`.
 6. **Tests E2E non exécutés** ; la CI tourne et est verte sur GitHub (3 exécutions).
-7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée.
+7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée. Les prévisualisations
+   Netlify de la PR #4 sont en échec ; leurs journaux et les variables d'environnement des sites doivent
+   être traités avant de considérer Netlify comme validé (le build local et la CI GitHub sont verts).
 8. **Assistant IA** non implémenté ; aucun appel sortant.
 9. **Multi-organisations** : bascule et création disponibles, mais pas de facturation, quotas, ni
    sélecteur permanent (accessible via Paramètres → Organisation).
@@ -166,6 +174,9 @@ npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, 
     (sauvegarde, contrôle d'empreintes, restauration et vérification d'intégrité). Restauration
     sur une base PostgreSQL distante **non testée** (aucun serveur accessible).
 12. **Sauvegarde/restauration du stockage objet** non traitée (dépend du fournisseur).
+13. **Connexion Google réelle non exécutée** : le flux OAuth et les contrôles de sécurité sont testés,
+    mais les identifiants présents dans l'environnement local sont des exemples. Il faut renseigner
+    les vrais `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, puis tester avec un compte Google.
 
 ---
 
@@ -180,20 +191,23 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 
 ## 8. Prochaines missions recommandées (par priorité)
 
-1. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les migrations, tester
-   une restauration, exécuter le workflow CI sur GitHub.
-2. **Transport d'e-mail réel** : fournir une clé Resend (gratuit) et un domaine vérifié ; activer
+1. **Finaliser la connexion Google** : créer les identifiants OAuth dans Google Cloud, déclarer
+   `<APP_URL>/api/auth/google/callback`, renseigner les secrets dans l'environnement et tester une
+   connexion réelle (guide : `docs/configuration.md`).
+2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 14 migrations, tester
+   une restauration, exécuter le workflow CI sur GitHub et déployer sur Netlify.
+3. **Transport d'e-mail réel** : fournir une clé Resend (gratuit) et un domaine vérifié ; activer
    ensuite la vérification d'adresse obligatoire.
-3. **Stockage objet** : valider le pilote Supabase Storage sur un bucket privé réel (ou S3), avec
+4. **Stockage objet** : valider le pilote Supabase Storage sur un bucket privé réel (ou S3), avec
    sauvegarde des fichiers.
-4. **Finances niveau 2** : relances d'impayés, échéanciers, lettrage, TVA déclarative, exports
+5. **Finances niveau 2** : relances d'impayés, échéanciers, lettrage, TVA déclarative, exports
    comptables — avec validation par un comptable (aucune promesse de conformité fiscale).
-5. **RH niveau 2** : paie **uniquement si le cadre légal local est fourni** (barèmes, cotisations),
+6. **RH niveau 2** : paie **uniquement si le cadre légal local est fourni** (barèmes, cotisations),
    entretiens, formations, organigramme.
-6. **Partenaires/communication** : pièces jointes aux conventions, abonnements au calendrier (ICS),
+7. **Partenaires/communication** : pièces jointes aux conventions, abonnements au calendrier (ICS),
    notifications temps réel.
-7. **Assistant IA** : sur autorisation explicite (fournisseur, coûts, données autorisées).
-8. **Durcissement** : généraliser `<module>:read` en RLS, purge planifiée des sessions expirées,
+8. **Assistant IA** : sur autorisation explicite (fournisseur, coûts, données autorisées).
+9. **Durcissement** : généraliser `<module>:read` en RLS, purge planifiée des sessions expirées,
    obligation de 2FA pour les rôles administrateurs.
 
 ---

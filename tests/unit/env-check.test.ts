@@ -39,6 +39,17 @@ describe("contrôle de configuration avant déploiement", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("accepte l'URL native de Netlify lorsque APP_URL n'est pas renseignée", () => {
+    const result = checkEnvironment({
+      ...serverlessBase,
+      APP_URL: undefined,
+      CONTEXT: "deploy-preview",
+      DEPLOY_PRIME_URL: "https://deploy-preview-4--crm.netlify.app",
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.notes.join(" ")).toMatch(/URL Netlify utilisée/);
+  });
+
   it("refuse PGlite et le stockage local sur serverless", () => {
     const result = checkEnvironment(
       { ...serverlessBase, DATABASE_MODE: "pglite", DATABASE_URL: "", STORAGE_DRIVER: "local" },
@@ -104,5 +115,31 @@ describe("contrôle de configuration avant déploiement", () => {
     expect(result.warnings.join(" ")).toMatch(/DATABASE_POOL_MAX=20/);
     expect(result.warnings.join(" ")).toMatch(/MAINTENANCE_SECRET/);
     expect(result.errors.join(" ")).toMatch(/APP_URL/);
+  });
+
+  it("valide la configuration de la connexion Google", () => {
+    // Absente : simple note, aucune erreur.
+    const off = checkEnvironment(serverlessBase);
+    expect(off.errors).toEqual([]);
+    expect(off.notes.join(" ")).toMatch(/Connexion Google désactivée/);
+
+    // Une seule des deux variables : bloquant.
+    expect(
+      checkEnvironment({ ...serverlessBase, GOOGLE_CLIENT_ID: "id-sans-secret" }).errors.join(" "),
+    ).toMatch(/GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET/);
+    expect(
+      checkEnvironment({ ...serverlessBase, GOOGLE_CLIENT_SECRET: "secret-sans-id" }).errors.join(" "),
+    ).toMatch(/GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET/);
+
+    // Les deux : activée, et l'URI de redirection exacte est rappelée.
+    const on = checkEnvironment({
+      ...serverlessBase,
+      GOOGLE_CLIENT_ID: "123.apps.googleusercontent.com",
+      GOOGLE_CLIENT_SECRET: "GOCSPX-test",
+    });
+    expect(on.errors).toEqual([]);
+    expect(on.notes.join(" ")).toContain(
+      "https://organix.exemple.com/api/auth/google/callback",
+    );
   });
 });

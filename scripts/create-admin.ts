@@ -27,7 +27,7 @@ const organizationName = arg("org") ?? "Mon organisation";
 const providedPassword = arg("password");
 
 function fail(message: string): never {
-  console.error(`[organix:admin] ${message}`);
+  console.error(`[excellence360:admin] ${message}`);
   process.exit(1);
 }
 
@@ -93,7 +93,7 @@ async function main() {
     ),
   );
 
-  console.log("\n[organix:admin] Compte réel créé (aucune donnée de démonstration).\n");
+  console.log("\n[excellence360:admin] Compte réel créé (aucune donnée de démonstration).\n");
   console.log(`  Organisation : ${organizationName}  (${organization.slug})`);
   console.log(`  Rôle         : ${check?.role ?? "propriétaire"} — ${check?.permissions ?? "?"} permissions`);
   console.log(`  Espace démo  : ${check?.is_demo ? "oui (anomalie)" : "non"}`);
@@ -104,7 +104,7 @@ async function main() {
 
 main()
   .catch((error: unknown) => {
-    console.error(`[organix:admin] ÉCHEC : ${(error as Error).message}`);
+    console.error(`[excellence360:admin] ÉCHEC : ${(error as Error).message}`);
     process.exitCode = 1;
   })
   .finally(() => closeDb());

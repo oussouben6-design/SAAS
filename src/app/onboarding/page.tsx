@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireUser, listMemberships } from "@/lib/server/context";
 import { OnboardingForm } from "./onboarding-form";
-import { BrandMark } from "@/components/layout/auth-shell";
+import { BrandLogo } from "@/components/layout/auth-shell";
 import { logoutAction } from "../(auth)/actions";
 
 export const metadata: Metadata = { title: "Créer votre organisation" };
@@ -15,10 +15,7 @@ export default async function OnboardingPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-8 px-5 py-12">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BrandMark />
-          <span className="font-semibold tracking-tight">ORGANIX</span>
-        </div>
+        <BrandLogo />
         <form action={logoutAction}>
           <button type="submit" className="text-sm text-muted-foreground hover:text-foreground">
             Se déconnecter

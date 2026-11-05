@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
 import { requireUser } from "@/lib/server/context";
 import { getMfaState } from "@/lib/auth/mfa";
+import { getGoogleIdentitySummary } from "@/lib/auth/service";
+import { isGoogleConfigured } from "@/lib/auth/google";
+import { GoogleLogo } from "@/components/layout/google-signin";
 import { PageHeader, Alert } from "@/components/ui/misc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +16,8 @@ export const metadata: Metadata = { title: "Sécurité" };
 export default async function SecurityPage() {
   const user = await requireUser();
   const mfa = await getMfaState(user.id);
+  const google = await getGoogleIdentitySummary(user.id);
+  const googleEnabled = isGoogleConfigured();
 
   return (
     <div className="space-y-5">
@@ -20,6 +25,43 @@ export default async function SecurityPage() {
         title="Sécurité du compte"
         description="Double authentification par application mobile (TOTP, compatible Google Authenticator)."
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GoogleLogo />
+            Connexion avec Google
+            <Badge variant={google ? "success" : "outline"}>{google ? "Liée" : "Non liée"}</Badge>
+          </CardTitle>
+          <CardDescription>
+            Connectez-vous sans mot de passe grâce à votre compte Google. La double authentification,
+            si elle est activée, reste demandée après Google.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {google ? (
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+              <span>Compte Google : {google.email ?? user.email}</span>
+              <span>Lié le {formatDateTime(google.linkedAt)}</span>
+              <span>
+                Dernière connexion Google :{" "}
+                {google.lastSignInAt ? formatDateTime(google.lastSignInAt) : "jamais"}
+              </span>
+            </div>
+          ) : googleEnabled ? (
+            <p className="text-sm text-muted-foreground">
+              Pour lier votre compte Google, déconnectez-vous puis utilisez le bouton
+              « Continuer avec Google » sur l&apos;écran de connexion avec la même adresse e-mail
+              ({user.email}) : la liaison est automatique.
+            </p>
+          ) : (
+            <Alert variant="warning" title="Connexion Google non activée sur ce serveur">
+              L&apos;administrateur doit définir <code>GOOGLE_CLIENT_ID</code> et{" "}
+              <code>GOOGLE_CLIENT_SECRET</code> (voir docs/configuration.md).
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

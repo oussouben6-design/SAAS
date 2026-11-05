@@ -40,7 +40,7 @@ export async function guard<T>(fn: () => Promise<ActionResult<T>>): Promise<Acti
     ) {
       throw error;
     }
-    console.error("[organix:action]", error);
+    console.error("[excellence360:action]", error);
     return {
       ok: false,
       code: "internal",

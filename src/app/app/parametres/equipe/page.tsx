@@ -220,7 +220,7 @@ export default async function TeamPage() {
                           </Button>
                         }
                         title={`Retirer ${member.full_name} ?`}
-                        description="Le collaborateur perd immédiatement l'accès à l'organisation. Son compte ORGANIX est conservé."
+                        description="Le collaborateur perd immédiatement l'accès à l'organisation. Son compte Excellence 360 CRM est conservé."
                         confirmLabel="Retirer"
                         action={removeMemberAction}
                         fields={{ memberId: member.id }}

@@ -5,33 +5,39 @@
     Arial, "Noto Sans", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
-  --color-background: oklch(0.984 0.003 247.86);
-  --color-foreground: oklch(0.21 0.03 256.8);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.21 0.03 256.8);
-  --color-muted: oklch(0.968 0.007 247.9);
-  --color-muted-foreground: oklch(0.5 0.02 257);
-  --color-border: oklch(0.917 0.008 252);
-  --color-input: oklch(0.9 0.01 252);
-  --color-ring: oklch(0.55 0.16 258);
+  /* Palette Excellence 360 CRM — couleurs relevées sur le logo officiel :
+     bleu marine #00285e · bleu #0057a8/#004a91 · bleu vif #008bdf · bleu ciel #75c8fe · or #ffc000 */
+  --color-background: #f6fafe;
+  --color-foreground: #0c2447;
+  --color-card: #ffffff;
+  --color-card-foreground: #0c2447;
+  --color-muted: #edf3fa;
+  --color-muted-foreground: #587391;
+  --color-border: #d9e6f3;
+  --color-input: #c3d9ee;
+  --color-ring: #008bdf;
 
-  --color-primary: oklch(0.48 0.16 258);
-  --color-primary-hover: oklch(0.43 0.16 258);
-  --color-primary-foreground: oklch(0.99 0.005 250);
+  --color-primary: #0057a8;
+  --color-primary-hover: #004578;
+  --color-primary-foreground: #ffffff;
 
-  --color-accent: oklch(0.94 0.03 250);
-  --color-accent-foreground: oklch(0.35 0.1 258);
+  --color-navy: #00285e;
+  --color-brand: #ffc000;
+  --color-brand-foreground: #00285e;
 
-  --color-success: oklch(0.55 0.13 155);
-  --color-success-soft: oklch(0.95 0.03 155);
-  --color-warning: oklch(0.66 0.14 75);
-  --color-warning-soft: oklch(0.96 0.04 85);
-  --color-danger: oklch(0.55 0.19 25);
-  --color-danger-soft: oklch(0.96 0.03 25);
+  --color-accent: #e1effc;
+  --color-accent-foreground: #004578;
 
-  --color-sidebar: oklch(0.23 0.03 257);
-  --color-sidebar-foreground: oklch(0.9 0.01 250);
-  --color-sidebar-muted: oklch(0.66 0.02 255);
+  --color-success: #178a5b;
+  --color-success-soft: #e5f5ee;
+  --color-warning: #b97e00;
+  --color-warning-soft: #fdf3da;
+  --color-danger: #d63a3a;
+  --color-danger-soft: #fdecec;
+
+  --color-sidebar: #00285e;
+  --color-sidebar-foreground: #eaf3fd;
+  --color-sidebar-muted: #9dbcda;
 
   --radius-xl: 0.875rem;
   --radius-2xl: 1.125rem;
@@ -75,8 +81,8 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
     box-shadow:
-      0 1px 2px 0 rgb(15 23 42 / 0.04),
-      0 1px 3px 0 rgb(15 23 42 / 0.03);
+      0 1px 2px 0 rgb(0 40 94 / 0.05),
+      0 1px 3px 0 rgb(0 40 94 / 0.04);
   }
 
   .animate-in-fast {

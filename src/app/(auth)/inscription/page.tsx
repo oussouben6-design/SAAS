@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { getSessionUser } from "@/lib/server/context";
+import { isGoogleConfigured } from "@/lib/auth/google";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = { title: "Créer un compte" };
@@ -31,7 +32,7 @@ export default async function RegisterPage() {
           de votre organisation.
         </p>
       ) : (
-        <RegisterForm />
+        <RegisterForm googleEnabled={isGoogleConfigured()} />
       )}
     </AuthShell>
   );

@@ -1,8 +1,8 @@
 {
-  "name": "organix",
+  "name": "excellence360-crm",
   "version": "0.1.0",
   "private": true,
-  "description": "ORGANIX — plateforme intégrée de gestion et de pilotage d'organisation",
+  "description": "Excellence 360 CRM (Excellence Services) — plateforme intégrée de gestion, de relation client et de pilotage de la performance",
   "engines": {
     "node": ">=20.9.0"
   },

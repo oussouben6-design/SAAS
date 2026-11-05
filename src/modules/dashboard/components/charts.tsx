@@ -17,11 +17,11 @@ import {
 } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
-  todo: "#64748b",
-  in_progress: "#2563eb",
-  review: "#7c3aed",
-  done: "#16a34a",
-  blocked: "#dc2626",
+  todo: "#7d99b4",
+  in_progress: "#0057a8",
+  review: "#e8a800",
+  done: "#178a5b",
+  blocked: "#d63a3a",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,7 +36,7 @@ export function TaskStatusChart({ data }: { data: { status: string; count: numbe
   const prepared = data.map((entry) => ({
     ...entry,
     label: STATUS_LABELS[entry.status] ?? entry.status,
-    color: STATUS_COLORS[entry.status] ?? "#64748b",
+    color: STATUS_COLORS[entry.status] ?? "#7d99b4",
   }));
 
   if (prepared.length === 0) {
@@ -60,7 +60,7 @@ export function TaskStatusChart({ data }: { data: { status: string; count: numbe
         </Pie>
         <Tooltip
           formatter={(value: unknown) => [`${Number(value ?? 0)} tâche(s)`, ""]}
-          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#e2e8f0" }}
+          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#d9e6f3" }}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
       </PieChart>
@@ -87,19 +87,19 @@ export function FinanceChart({
       <AreaChart data={prepared} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
         <defs>
           <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#2563eb" stopOpacity={0.28} />
-            <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+            <stop offset="5%" stopColor="#0057a8" stopOpacity={0.28} />
+            <stop offset="95%" stopColor="#0057a8" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#dc2626" stopOpacity={0.22} />
-            <stop offset="95%" stopColor="#dc2626" stopOpacity={0} />
+            <stop offset="5%" stopColor="#d63a3a" stopOpacity={0.22} />
+            <stop offset="95%" stopColor="#d63a3a" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-        <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#94a3b8" />
-        <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" width={70} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e7f0f9" vertical={false} />
+        <XAxis dataKey="month" tick={{ fontSize: 11 }} stroke="#8aa5c0" />
+        <YAxis tick={{ fontSize: 11 }} stroke="#8aa5c0" width={70} />
         <Tooltip
-          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#e2e8f0" }}
+          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#d9e6f3" }}
           formatter={(value: unknown) =>
             new Intl.NumberFormat("fr-FR", { maximumFractionDigits: digits }).format(Number(value ?? 0))
           }
@@ -108,14 +108,14 @@ export function FinanceChart({
         <Area
           type="monotone"
           dataKey="Revenus"
-          stroke="#2563eb"
+          stroke="#0057a8"
           fill="url(#revenueGradient)"
           strokeWidth={2}
         />
         <Area
           type="monotone"
           dataKey="Dépenses"
-          stroke="#dc2626"
+          stroke="#d63a3a"
           fill="url(#expenseGradient)"
           strokeWidth={2}
         />
@@ -126,7 +126,7 @@ export function FinanceChart({
 
 export function SimpleBarChart({
   data,
-  color = "#2563eb",
+  color = "#0057a8",
   unit = "",
 }: {
   data: { label: string; value: number }[];
@@ -139,11 +139,11 @@ export function SimpleBarChart({
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#94a3b8" interval={0} angle={-12} dy={6} height={44} />
-        <YAxis tick={{ fontSize: 11 }} stroke="#94a3b8" allowDecimals={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e7f0f9" vertical={false} />
+        <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#8aa5c0" interval={0} angle={-12} dy={6} height={44} />
+        <YAxis tick={{ fontSize: 11 }} stroke="#8aa5c0" allowDecimals={false} />
         <Tooltip
-          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#e2e8f0" }}
+          contentStyle={{ borderRadius: 10, fontSize: 12, borderColor: "#d9e6f3" }}
           formatter={(value: unknown) => [`${Number(value ?? 0)}${unit}`, ""]}
         />
         <Bar dataKey="value" fill={color} radius={[6, 6, 0, 0]} maxBarSize={44} />
