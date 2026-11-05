@@ -40,7 +40,12 @@ l'application refuse explicitement de démarrer dans ce cas
 ## 3. Variables d'environnement (Site configuration → Environment variables)
 
 À renseigner avant le premier déploiement réussi. Utiliser **des valeurs `production`** et cocher
-*Contains secret values* pour les clés.
+*Contains secret values* pour les clés. **Les secrets GitHub Actions ne sont pas transmis à Netlify** :
+ils doivent être définis dans chaque site Netlify (ou via l'API/CLI Netlify). Les valeurs non sensibles
+`DATABASE_POOL_MAX=2`, `AUTO_MIGRATE=false`, `SUPABASE_STORAGE_BUCKET=documents` et
+`MAX_UPLOAD_BYTES=5242880` sont déjà dans `netlify.toml` ; `APP_URL` est déduite de l'URL Netlify si
+elle est absente. Il reste donc au minimum trois variables à configurer : `DATABASE_URL`,
+`SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY`.
 
 | Variable | Exemple / valeur | Notes |
 | --- | --- | --- |
@@ -54,7 +59,7 @@ l'application refuse explicitement de démarrer dans ce cas
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJ…` | **Secret**, jamais `NEXT_PUBLIC_` |
 | `SUPABASE_STORAGE_BUCKET` | `documents` | Bucket privé |
 | `MAX_UPLOAD_BYTES` | `5242880` | **5 Mo** : les fonctions Netlify limitent le corps de requête (~6 Mo) |
-| `APP_URL` | `https://votre-site.netlify.app` | Puis le domaine personnalisé |
+| `APP_URL` | `https://votre-site.netlify.app` | Optionnel sur Netlify : `URL`/`DEPLOY_PRIME_URL` sont utilisées automatiquement ; à définir pour un domaine personnalisé |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | identifiants OAuth Google | Optionnels, à définir ensemble ; voir `docs/configuration.md` |
 | `MFA_ENCRYPTION_KEY` | sortie de `openssl rand -base64 32` | Chiffre les secrets TOTP |
 | `MAINTENANCE_SECRET` | sortie de `openssl rand -hex 32` | Protège `/api/maintenance` |

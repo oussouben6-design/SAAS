@@ -18,7 +18,7 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **128 tests / 128** en 19 fichiers (~65 s) |
+| `npm test` (Vitest) | ✅ **130 tests / 130** en 19 fichiers (~66 s) |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
@@ -66,8 +66,9 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 19 passed (19) · Tests 128 passed (128) · ~65 s
+npm test                → Test Files 19 passed (19) · Tests 130 passed (130) · ~66 s
 npm run build           → succès (vérifié le 5 novembre 2026)
+Netlify (simulation)     → env:check + build OK avec valeurs factices, sans connexion externe
 npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 49 tables, 128 politiques RLS

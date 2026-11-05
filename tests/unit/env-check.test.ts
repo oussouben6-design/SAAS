@@ -39,6 +39,17 @@ describe("contrôle de configuration avant déploiement", () => {
     expect(result.errors).toEqual([]);
   });
 
+  it("accepte l'URL native de Netlify lorsque APP_URL n'est pas renseignée", () => {
+    const result = checkEnvironment({
+      ...serverlessBase,
+      APP_URL: undefined,
+      CONTEXT: "deploy-preview",
+      DEPLOY_PRIME_URL: "https://deploy-preview-4--crm.netlify.app",
+    });
+    expect(result.errors).toEqual([]);
+    expect(result.notes.join(" ")).toMatch(/URL Netlify utilisée/);
+  });
+
   it("refuse PGlite et le stockage local sur serverless", () => {
     const result = checkEnvironment(
       { ...serverlessBase, DATABASE_MODE: "pglite", DATABASE_URL: "", STORAGE_DRIVER: "local" },

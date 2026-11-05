@@ -23,7 +23,7 @@ une nouvelle.
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections |
+| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Netlify, `URL`/`DEPLOY_PRIME_URL` sont utilisées si absente |
 | `AUTH_ALLOW_REGISTRATION` | `true` | `false` = comptes créés uniquement par invitation |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Exige une adresse vérifiée pour se connecter |
 | `GOOGLE_CLIENT_ID` | — (connexion Google désactivée) | ID client OAuth Google (« Application Web ») — voir ci-dessous |

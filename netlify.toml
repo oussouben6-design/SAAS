@@ -20,7 +20,15 @@
   # Netlify exécute le build sur une plateforme serverless : ces valeurs sont
   # rappelées ici pour éviter un build avec les réglages de développement.
   DATABASE_MODE = "postgres"
+  DATABASE_POOL_MAX = "2"
+  AUTO_MIGRATE = "false"
   STORAGE_DRIVER = "supabase"
+  SUPABASE_STORAGE_BUCKET = "documents"
+  # Les fonctions Netlify limitent le corps des requêtes (~6 Mo).
+  MAX_UPLOAD_BYTES = "5242880"
+  # APP_URL est déduite de URL/DEPLOY_PRIME_URL si elle n'est pas définie.
+  # DATABASE_URL, SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY restent des
+  # variables Netlify obligatoires (jamais de secret dans ce fichier).
 
 # Runtime Next.js : @netlify/plugin-nextjs est détecté et installé automatiquement
 # par Netlify dès qu'un projet Next.js est reconnu (aucune déclaration nécessaire,

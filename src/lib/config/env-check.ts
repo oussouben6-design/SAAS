@@ -4,7 +4,7 @@
  * Fonction pure (aucun accès réseau) afin d'être testable et utilisable en CI comme au build :
  * `npm run env:check` échoue si la configuration ne peut pas fonctionner sur la cible.
  */
-import { detectPlatform, type PlatformEnvironment } from "./platform";
+import { appUrlFromEnvironment, detectPlatform, type PlatformEnvironment } from "./platform";
 
 export interface EnvCheckOptions {
   serverless?: boolean;
@@ -132,7 +132,10 @@ export function checkEnvironment(
   }
 
   // ---------------------------------------------------------------- application
-  const appUrl = env.APP_URL ?? "";
+  const appUrl = appUrlFromEnvironment(env) ?? "";
+  if (!env.APP_URL && !env.NEXT_PUBLIC_APP_URL && appUrl && platform === "netlify") {
+    notes.push(`APP_URL non définie : URL Netlify utilisée (${appUrl}).`);
+  }
   if (!appUrl) {
     errors.push("APP_URL est requise (liens d'e-mail et redirections).");
   } else {

@@ -10,6 +10,8 @@
  * Voir docs/configuration.md pour les variables d'environnement.
  */
 
+import { appUrlFromEnvironment } from "@/lib/config/platform";
+
 export type MailKind = "email_verification" | "password_reset" | "invitation";
 
 export interface MailMessage {
@@ -36,11 +38,7 @@ export function mailTransport(): "console" | "smtp" | "resend" | "none" {
 }
 
 export function appBaseUrl(): string {
-  return (
-    process.env.APP_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "http://localhost:3000"
-  ).replace(/\/$/, "");
+  return (appUrlFromEnvironment() ?? "http://localhost:3000").replace(/\/$/, "");
 }
 
 export async function sendMail(message: MailMessage): Promise<MailResult> {
