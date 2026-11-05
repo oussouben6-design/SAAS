@@ -23,7 +23,7 @@ sont explicitement listés.
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
 | Supervision / vérification | ✅ `GET /api/health` (200, 14/14 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
-| CI GitHub Actions | ✅ **exécuté et vert** sur GitHub (types, lint, 82 tests, build — 1 min 47 s) |
+| CI GitHub Actions | ✅ **verte sur la PR #4** (run `42067007177` : types, lint, 128 tests, build — 2 min 41 s) |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
 | Déploiement | ⚠️ **Aucun** — voir `docs/deploiement.md` |
@@ -94,8 +94,8 @@ npm run db:migrate      → 14/14 migrations, 49 tables, 128 politiques RLS
 **Non exécutés** : les tests Playwright (`tests/e2e/*.spec.ts`) — navigateurs impossibles à
 télécharger dans cet environnement.
 
-**CI** : exécutée sur GitHub le 2 novembre 2026 (run `41447870753`) — job « Types, lint, tests et
-build » **vert en 1 min 47 s**. Les actions ont été mises à jour (`checkout@v5`, `setup-node@v5`).
+**CI** : dernière exécution sur la PR #4 (run `42067007177`) — job « Types, lint, tests et build »
+**vert en 2 min 41 s**, avec 128 tests. Les actions utilisent `checkout@v5` et `setup-node@v5`.
 
 ---
 
@@ -162,7 +162,9 @@ npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, 
    migration : symptôme observé = permission nouvellement créée « absente »). Documenté dans
    `docs/installation.md`.
 6. **Tests E2E non exécutés** ; la CI tourne et est verte sur GitHub (3 exécutions).
-7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée.
+7. **Aucun déploiement** : la mention « en production » ne doit pas être utilisée. Les prévisualisations
+   Netlify de la PR #4 sont en échec ; leurs journaux et les variables d'environnement des sites doivent
+   être traités avant de considérer Netlify comme validé (le build local et la CI GitHub sont verts).
 8. **Assistant IA** non implémenté ; aucun appel sortant.
 9. **Multi-organisations** : bascule et création disponibles, mais pas de facturation, quotas, ni
    sélecteur permanent (accessible via Paramètres → Organisation).
