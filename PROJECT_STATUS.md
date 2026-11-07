@@ -12,10 +12,10 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | **21/21** appliquées sans erreur (PGlite), idempotentes — dont 5 de récupération de dérive et 2 de correction RLS (`0015`→`0021`, cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
+| Migrations SQL | **23/23** appliquées sans erreur (PGlite), idempotentes — `0015`→`0023` couvrent la récupération de la dérive Supabase, le durcissement et le contexte RLS lisant le jeton (cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Tables métier | 49 |
 | Audit de dérive Git ↔ base | ✅ `npm run db:audit` + verrou `supabase/schema-lock.json` (133 politiques, 31 déclencheurs, 13 fonctions, 557 colonnes) — étape ajoutée à la CI |
-| Politiques RLS | **133** (RLS activée **et forcée** sur les 49 tables publiques) ; les 26 politiques `*_insert` héritées de `0001`–`0010` sont passées de `for all` à `for insert` (`0021`) |
+| Politiques RLS | **133** (RLS activée **et forcée** sur les 49 tables publiques) ; 0 politique lisible sans restriction (`for all`/`for select` sans `USING`), contrôlé par `npm run db:audit` |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
@@ -35,7 +35,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
-| Supabase (offre gratuite) | 🟡 Appliqué, **en attente de correctif** | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` disponibles. Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma appliqué (14 migrations, 5 nov.). **Dérive constatée le 7 nov.** : 5 migrations appliquées hors Git, privilèges `0013` annulés et exposition RLS inter-organisations active — correctifs `0015`→`0021` **pas encore rejoués sur la base** ([`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
+| Supabase (offre gratuite) | 🟡 Appliqué, **en attente de correctif** | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` disponibles. Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma appliqué (14 migrations, 5 nov.). **Dérive constatée le 7 nov.** : 5 migrations appliquées hors Git et privilèges `0013` annulés. **Corrections `0015`→`0023` rejouées sur la base** le 7 nov. à 22:5x UTC et vérifiées (133 politiques, 0 politique lisible sans restriction, 1 seul privilège `authenticated` toléré, RLS forcée sur 49/49, journal à 23 entrées) ([`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
 | Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours), **connexion Google OAuth/OIDC** (PKCE, vérification du jeton, liaison de compte, MFA conservée) | Activation 2FA facultative ; transport SMTP non implémenté ; identifiants Google réels à configurer pour une connexion effective |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
@@ -213,19 +213,20 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 
 ---
 
-## 8 bis. Dérive du 7 novembre 2026 (à solder en priorité)
+## 8 bis. Dérive du 7 novembre 2026 (soldée)
 
-La base Supabase de production contenait **5 migrations jamais versionnées** (`0015`→`0019` dans son
-journal) et **les révocations de `0013` annulées** : `authenticated` avait `SELECT/INSERT/UPDATE/DELETE`
-sur 43 tables. Combiné à une écriture malheureuse des politiques d'insertion (`for all` sans `USING`,
-présente **dans le dépôt** depuis `0001`), cela rendait les lignes `invoice_items` et `quote_items` de
-**toutes** les organisations lisibles via PostgREST. Détail, preuves et remédiation :
-[`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md).
+La base Supabase contenait **5 migrations jamais versionnées** (`0015`→`0019` dans son journal) et
+**les révocations de `0013` annulées** : `authenticated` avait `SELECT/INSERT/UPDATE/DELETE` sur
+43 des 49 tables métier, et `anon` pouvait exécuter deux fonctions de déclencheur. **Lecture
+erronée corrigée depuis** : `polcmd = 'a'` signifie INSERT (et non « ALL ») — il n'y a jamais eu de
+politique ouvrant une lecture inter-organisations, ni dans le dépôt ni en base. Le défaut réel
+était **fonctionnel** : `app.current_user_id()` ignorait le jeton Supabase, donc toute voie HTTP
+(RPC `security definer`, Realtime) arrivait sans identité et se voyait opposer un refus systématique.
 
-État : récupération + corrections **commitées sur cette branche** (21 migrations, 130/130 tests,
-audit local conforme, garde automatique en CI) ; **la base réelle n'a pas encore reçu les correctifs**
-(aucune écriture faite lors de l'audit). Prochaine action : fusionner, puis rejouer
-`npm run db:migrate` + `npm run db:audit` contre `opnlvqwbevnivfjpbrxa`.
+État : `0015`→`0023` appliquées **et vérifiées** en base (définition de `app.current_user_id()`
+identique au dépôt, empreinte md5 contrôlée des deux côtés), garde `npm run db:audit` en CI,
+modèle « RPC assumé » retenu et écrit dans `docs/audit-derive-supabase.md` § 5. 136/136 tests, dont
+6 nouveaux sur le contexte JWT (`tests/integration/jwt-rls-context.test.ts`).
 
 ## 9. Décisions de périmètre à valider
 

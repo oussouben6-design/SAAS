@@ -23,6 +23,14 @@ import { getDb, closeDb, privileged } from "../src/lib/db";
 import { MIGRATIONS_PATH } from "../src/lib/db/client";
 import type { SqlExecutor } from "../src/lib/db/client";
 
+/**
+ * Privilèges de table tolérés pour les rôles Supabase, et à quelle condition. Le modèle retenu
+ * (`0022`/`0023`) garde l'API générée fermée, à l'exception de la lecture de `notifications`
+ * par un abonné `supabase_realtime` : sans ce SELECT, Realtime (qui évalue la RLS sous le rôle
+ * de l'abonné) ne délivre rien. Tout le reste reste interdit, comme pour `0013`/`0020`.
+ */
+const SUPABASE_ONLY_GRANTS = new Set(["authenticated|SELECT|notifications"]);
+
 const LOCK_PATH = path.join(process.cwd(), "supabase", "schema-lock.json");
 const update = process.argv.includes("--update");
 
@@ -135,12 +143,19 @@ async function main() {
         from pg_class c join pg_namespace n on n.oid = c.relnamespace
         where n.nspname = 'public' and c.relkind = 'r' order by 1`,
     );
-    const exposedGrants = await tx.query<{ grantee: string; privilege: string; n: number }>(
-      `select grantee, privilege_type as privilege, count(distinct table_name)::int as n
-        from information_schema.role_table_grants
-        where table_schema = 'public' and grantee in ('anon', 'authenticated')
-        group by 1, 2 order by 1, 2`,
-    ).catch(() => []);
+    const exposedGrants = await tx
+      .query<{ grantee: string; privilege: string; tbl: string }>(
+        `select grantee, privilege_type as privilege, table_name as tbl
+          from information_schema.role_table_grants
+          where table_schema = 'public' and grantee in ('anon', 'authenticated')
+          order by 1, 2, 3`,
+      )
+      .catch(() => [] as { grantee: string; privilege: string; tbl: string }[]);
+    const realtimeTables = await tx
+      .query<{ tbl: string }>(
+        `select tablename as tbl from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public'`,
+      )
+      .catch(() => [] as { tbl: string }[]);
     const roles = await tx.query<{ rolname: string }>(
       `select rolname from pg_roles where rolname in ('anon', 'authenticated')`,
     );
@@ -156,27 +171,27 @@ async function main() {
           order by 1`,
       ).catch(() => []);
     }
-    // Politique permissive « FOR ALL » sans USING : elle vaut aussi pour SELECT (USING implicite
-    // true) et annule donc le filtrage par organisation de la table.
-    // Contrôle réservé à PostgreSQL réel : PGlite enregistre toute politique avec polcmd = 'a',
-    // ce qui rendrait la comparaison impossible en local (faux positifs systématiques).
-    const leakyPolicies =
-      db.driver === "postgres"
-        ? await tx
-            .query<{ name: string }>(
-              `select c.relname || '|' || pol.polname as name from pg_policy pol
-                join pg_class c on c.oid = pol.polrelid join pg_namespace n on n.oid = c.relnamespace
-                where n.nspname = 'public' and pol.polcmd = 'a' and pol.polqual is null
-                  and pol.polwithcheck is not null
-                order by 1`,
-            )
-            .catch(() => [] as { name: string }[])
-        : [];
+    // Politique permissive lisible sans restriction : `FOR ALL` (polcmd '*') ou `FOR SELECT`
+    // ('r') sans clause USING vaut pour SELECT avec USING implicite `true`, est OR-ée aux autres
+    // politiques permissives et annule donc le filtrage par organisation.
+    // Mémo des valeurs de pg_policy.polcmd (source d'une première analyse erronée) :
+    //   'r' SELECT · 'a' INSERT · 'w' UPDATE · 'd' DELETE · '*' ALL.
+    // Une politique `for insert` sans USING est NORMALE (elle n'utilise que WITH CHECK).
+    const leakyPolicies = await tx
+      .query<{ name: string }>(
+        `select c.relname || '|' || pol.polname as name from pg_policy pol
+          join pg_class c on c.oid = pol.polrelid join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'public' and pol.polcmd in ('*', 'r') and pol.polqual is null
+          order by 1`,
+      )
+      .catch(() => [] as { name: string }[]);
+
     return {
       inventory,
       ledger,
       rls,
       exposedGrants,
+      realtimeTables,
       exposedFunctions,
       leakyPolicies,
       supabaseRoles: roles.length > 0,
@@ -184,9 +199,6 @@ async function main() {
   });
 
   if (db.driver === "pglite") {
-    notes.push(
-      "PGlite : contrôle « politique for all sans USING » ignoré (le moteur ne différencie pas les commandes de politique)",
-    );
     data.inventory.functions = data.inventory.functions.filter((f) => !SUPABASE_ONLY.has(f));
     data.inventory.triggers = data.inventory.triggers.filter((t) => !SUPABASE_TRIGGERS_ONLY.has(t));
     notes.push(
@@ -219,11 +231,27 @@ async function main() {
   if (noRls.length > 0) errors.push(`RLS non activée/forcée sur : ${noRls.join(", ")}`);
 
   // 3 et 4. Exposition PostgREST
-  if (data.supabaseRoles && data.exposedGrants.length > 0) {
-    const detail = data.exposedGrants.map((g) => `${g.grantee}.${g.privilege} (${g.n} tables)`).join(", ");
+  const realtime = new Set(data.realtimeTables.map((r) => r.tbl));
+  const tolerated = new Set<string>();
+  for (const entry of SUPABASE_ONLY_GRANTS) {
+    const parts = entry.split("|");
+    const privilege = parts[1];
+    const table = parts[2];
+    if (privilege === "SELECT" && table && realtime.has(table)) tolerated.add(entry);
+  }
+  const unexpectedGrants = data.exposedGrants.filter(
+    (g) => !tolerated.has(`${g.grantee}|${g.privilege}|${g.tbl}`),
+  );
+  if (data.supabaseRoles && unexpectedGrants.length > 0) {
+    const detail = unexpectedGrants.map((g) => `${g.grantee}.${g.privilege} sur ${g.tbl}`).join(", ");
     errors.push(
-      `privilèges révoqués par la migration 0013 retrouvés sur les tables métier : ${detail}. ` +
-        `Les données deviennent interrogeables via l'API générée (PostgREST) avec un jeton d'organisation.`,
+      `privilèges révoqués par les migrations 0013/0020 retrouvés sur les tables métier : ${detail}. ` +
+        `Ces tables redeviennent interrogeables via l'API générée (PostgREST) avec un jeton.`,
+    );
+  }
+  if (tolerated.size > 0) {
+    notes.push(
+      `privilège temps réel toléré (lecture RLS de « notifications » par « authenticated ») : ${[...tolerated].join(", ")}`,
     );
   }
   // Une politique `FOR ALL` sans USING filtre aussi peu qu'une politique SELECT absente.
