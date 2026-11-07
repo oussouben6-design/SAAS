@@ -22,7 +22,9 @@
     "0018_quote_to_invoice.sql",
     "0019_item_policies_fines.sql",
     "0020_rls_insert_leak_fix.sql",
-    "0021_rls_insert_policies_are_insert_only.sql"
+    "0021_rls_insert_policies_are_insert_only.sql",
+    "0022_rls_context_accepts_supabase_jwt.sql",
+    "0023_rpc_surface.sql"
   ],
   "tables": [
     "announcements",
