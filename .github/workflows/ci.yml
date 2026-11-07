@@ -70,5 +70,12 @@ jobs:
       - name: Tests unitaires et d'intégration
         run: npm run test
 
+      - name: Audit de schéma (dérive et durcissement)
+        # Reproduit les migrations sur une base neuve et vérifie que le verrou de schéma,
+        # la RLS forcée et l'absence d'exposition PostgREST tiennent.
+        run: npm run db:migrate && npm run db:audit
+        env:
+          ORGANIX_DATA_DIR: .data/audit-db
+
       - name: Build de production
         run: npm run build
