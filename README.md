@@ -51,6 +51,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:migrate` | Applique les migrations et affiche leur état |
 | `GET /api/health` | Sonde de disponibilité (base, migrations, latence) — sans donnée métier |
 | `npm run db:status` | Moteur, migrations, volumétrie, organisations de démonstration |
+| `npm run db:audit` | **Dérive Git ↔ base** : journal de migrations, RLS forcée, privilèges `anon`/`authenticated`, fonctions exposées, verrou `supabase/schema-lock.json` (`-- --update` pour le régénérer) ; code 1 si écart |
 | `npm run db:seed` | Crée le jeu de démonstration (`-- --force` pour le recréer) |
 | `npm run admin:create` | Crée un **compte réel** + son organisation (`-- --email … --name … --org …`) |
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
@@ -83,6 +84,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | [`docs/DIAGNOSTIC.md`](docs/DIAGNOSTIC.md) | Diagnostic technique, architecture proposée, plan, schéma initial, coûts |
 | [`docs/installation.md`](docs/installation.md) | Installation Windows / macOS / Linux, développement et Supabase |
 | [`docs/supabase.md`](docs/supabase.md) | **Déploiement Supabase (offre gratuite)** : pooler, migrations, Storage privé, keep-alive, sauvegardes |
+| [`docs/audit-derive-supabase.md`](docs/audit-derive-supabase.md) | **Audit de dérive Git ↔ base Supabase** : objets non versionnés, exposition RLS inter-organisations, remédiation |
 | [`docs/configuration.md`](docs/configuration.md) | Toutes les variables d'environnement |
 | [`docs/architecture.md`](docs/architecture.md) | Organisation du code, flux de données, conventions |
 | [`docs/securite.md`](docs/securite.md) | Modèle de sécurité, RLS, limites connues |
