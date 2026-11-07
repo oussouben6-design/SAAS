@@ -23,9 +23,11 @@ une nouvelle.
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections |
+| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Netlify, `URL`/`DEPLOY_PRIME_URL` sont utilisées si absente |
 | `AUTH_ALLOW_REGISTRATION` | `true` | `false` = comptes créés uniquement par invitation |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Exige une adresse vérifiée pour se connecter |
+| `GOOGLE_CLIENT_ID` | — (connexion Google désactivée) | ID client OAuth Google (« Application Web ») — voir ci-dessous |
+| `GOOGLE_CLIENT_SECRET` | — | Secret associé ; les deux variables doivent être définies ensemble |
 | `NODE_ENV` | — | `production` active le cookie `Secure` |
 
 ### Comportements liés
@@ -36,12 +38,39 @@ une nouvelle.
 - Les sessions sont stockées en base (jeton aléatoire haché, cookie `organix_session`
   `httpOnly` + `SameSite=Lax`). Aucune clé de signature n'est nécessaire.
 
+### Activer « Se connecter avec Google »
+
+1. Ouvrez la [console Google Cloud](https://console.cloud.google.com/) (compte Google gratuit)
+   et créez ou sélectionnez un projet.
+2. **APIs et services → Écran de consentement OAuth** : type « Externe », nom de l'application
+   « Excellence 360 CRM », e-mail d'assistance. Aucune portée sensible n'est demandée
+   (`openid`, `email`, `profile`) : pas de validation Google nécessaire au-delà de la publication
+   de l'écran de consentement (en mode « Test », seuls les utilisateurs de test déclarés peuvent
+   se connecter — passez l'application en « Production » pour l'ouvrir à tous).
+3. **APIs et services → Identifiants → Créer des identifiants → ID client OAuth**,
+   type **Application Web** :
+   - Origines JavaScript autorisées : votre `APP_URL` (ex. `http://localhost:3000`) ;
+   - **URI de redirection autorisés** : `<APP_URL>/api/auth/google/callback` — un par
+     environnement, par exemple `http://localhost:3000/api/auth/google/callback` en
+     développement et `https://crm.exemple.com/api/auth/google/callback` en production.
+     L'orthographe doit être strictement identique, sinon Google refuse (`redirect_uri_mismatch`).
+4. Copiez **ID client** et **secret client** dans `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
+   (fichier `.env.local` en local, variables de l'hébergeur en production), puis redémarrez.
+5. Contrôlez avec `npm run env:check` : il affiche l'URI de redirection exacte de
+   l'environnement courant.
+
+Comportement : le bouton « Continuer avec Google » n'apparaît que si les deux variables sont
+définies. Un premier passage avec un e-mail déjà connu **lie** le compte existant (l'adresse est
+marquée vérifiée) ; sinon un compte sans mot de passe est créé — sauf si
+`AUTH_ALLOW_REGISTRATION=false`. La double authentification TOTP éventuelle reste demandée
+après Google. Détails de sécurité : [`docs/securite.md`](securite.md).
+
 ## E-mails
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
 | `MAIL_TRANSPORT` | `console` | `console` (journalise le lien), `none`, `resend` (envoi réel), `smtp` (non implémenté) |
-| `MAIL_FROM` | — | Expéditeur vérifié (ex. `ORGANIX <no-reply@votre-domaine>`), requis pour `resend` |
+| `MAIL_FROM` | — | Expéditeur vérifié (ex. `Excellence 360 CRM <no-reply@votre-domaine>`), requis pour `resend` |
 | `RESEND_API_KEY` | — | Clé API Resend, requise pour `resend` |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` | — | **Non implémenté** : `smtp` renvoie un avertissement explicite |
 
@@ -117,7 +146,7 @@ répertoire est refusée.
 
 Mode `supabase` : les fichiers sont écrits, lus et supprimés via l'API REST de Storage avec la clé
 service_role ; le bucket reste **privé** (aucune URL publique, la lecture passe par le serveur
-ORGANIX qui vérifie les permissions `documents:read`). **Non vérifié contre un projet Supabase réel**
+Excellence 360 CRM qui vérifie les permissions `documents:read`). **Non vérifié contre un projet Supabase réel**
 dans cet environnement (pas de réseau sortant) : la requête est couverte par des tests unitaires avec
 `fetch` simulé. Toute erreur (HTTP, configuration incomplète) est remontée à l'utilisateur.
 

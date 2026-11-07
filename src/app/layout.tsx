@@ -1,22 +1,22 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppToaster } from "@/components/ui/toaster";
+import { APP_COMPANY, APP_NAME, APP_TAGLINE } from "@/lib/brand";
 
 export const metadata: Metadata = {
   title: {
-    default: "ORGANIX — Gestion et pilotage d'organisation",
-    template: "%s · ORGANIX",
+    default: `${APP_NAME} — Gestion, relation client et pilotage de la performance`,
+    template: `%s · ${APP_NAME}`,
   },
-  description:
-    "ORGANIX centralise les activités administratives, commerciales, financières, humaines et opérationnelles de votre organisation.",
-  applicationName: "ORGANIX",
+  description: `${APP_TAGLINE}. ${APP_NAME}, par ${APP_COMPANY}, centralise les activités administratives, commerciales, financières, humaines et opérationnelles de votre organisation.`,
+  applicationName: APP_NAME,
   robots: { index: false, follow: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#1e293b",
+  themeColor: "#00285e",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

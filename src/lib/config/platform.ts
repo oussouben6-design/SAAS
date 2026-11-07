@@ -25,6 +25,21 @@ export function isServerless(env: PlatformEnvironment = process.env): boolean {
   return detectPlatform(env) !== "node";
 }
 
+/**
+ * URL publique de l'application, sans exiger une variable dupliquée sur Netlify.
+ * Netlify fournit URL et DEPLOY_PRIME_URL au build et aux fonctions :
+ * - production : le domaine principal (URL), notamment pour les e-mails et OAuth ;
+ * - preview/branche : l'URL du déploiement, afin de ne pas mélanger les environnements.
+ * APP_URL reste prioritaire pour un domaine personnalisé ou un choix explicite.
+ */
+export function appUrlFromEnvironment(env: PlatformEnvironment = process.env): string | undefined {
+  const explicit = env.APP_URL ?? env.NEXT_PUBLIC_APP_URL;
+  if (explicit !== undefined) return explicit;
+  if (detectPlatform(env) !== "netlify") return undefined;
+  if (env.CONTEXT === "production") return env.URL ?? env.DEPLOY_PRIME_URL;
+  return env.DEPLOY_PRIME_URL ?? env.URL;
+}
+
 export const SERVERLESS_STORAGE_ERROR =
   "Stockage local impossible sur une plateforme serverless (disque éphémère) : " +
   "définissez STORAGE_DRIVER=supabase avec SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY, " +

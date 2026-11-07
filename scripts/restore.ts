@@ -12,7 +12,7 @@ async function main() {
 
   if (!from) {
     throw new Error(
-      "Indiquez le répertoire de sauvegarde : npm run db:restore -- --depuis backups/organix-AAAA...",
+      "Indiquez le répertoire de sauvegarde : npm run db:restore -- --depuis backups/excellence360-AAAA...",
     );
   }
   if (!force && !process.argv.includes("--yes")) {
@@ -25,17 +25,17 @@ async function main() {
   if (checksums.mismatched.length > 0) {
     throw new Error(`Sauvegarde invalide : ${checksums.mismatched.join(", ")}`);
   }
-  console.info(`[organix:restore] ${checksums.checked} empreinte(s) valides.`);
+  console.info(`[excellence360:restore] ${checksums.checked} empreinte(s) valides.`);
 
   const result = await restoreBackup({ from, target, force });
-  console.info(`[organix:restore] Base restaurée dans ${result.target}`);
+  console.info(`[excellence360:restore] Base restaurée dans ${result.target}`);
   if (result.safetyCopy) {
-    console.info(`[organix:restore] Ancienne base conservée : ${result.safetyCopy}`);
+    console.info(`[excellence360:restore] Ancienne base conservée : ${result.safetyCopy}`);
   }
-  console.info("[organix:restore] Démarrez l'application puis exécutez `npm run db:status` pour contrôler l'état.");
+  console.info("[excellence360:restore] Démarrez l'application puis exécutez `npm run db:status` pour contrôler l'état.");
 }
 
 main().catch((error: unknown) => {
-  console.error(`[organix:restore] ÉCHEC : ${(error as Error).message}`);
+  console.error(`[excellence360:restore] ÉCHEC : ${(error as Error).message}`);
   process.exitCode = 1;
 });

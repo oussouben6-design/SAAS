@@ -26,13 +26,13 @@ const TABLES = [
 
 async function main() {
   const db = await getDb();
-  console.info(`[organix] Moteur de base    : ${db.driver}`);
+  console.info(`[excellence360] Moteur de base    : ${db.driver}`);
   if (db.driver === "pglite") {
     console.info(
-      `[organix] Répertoire local  : ${process.env.ORGANIX_DATA_DIR ?? ".data/pglite"}`,
+      `[excellence360] Répertoire local  : ${process.env.ORGANIX_DATA_DIR ?? ".data/pglite"}`,
     );
   }
-  console.info(`[organix] Auto-migration    : ${process.env.AUTO_MIGRATE === "true" ? "oui" : "non"}`);
+  console.info(`[excellence360] Auto-migration    : ${process.env.AUTO_MIGRATE === "true" ? "oui" : "non"}`);
 
   const { migrations, tables, demo } = await privileged(async (tx) => {
     const status = await migrationStatus(tx);
@@ -118,7 +118,7 @@ async function main() {
 }
 
 main().catch(async (error) => {
-  console.error("[organix] Lecture de l'état impossible :", error);
+  console.error("[excellence360] Lecture de l'état impossible :", error);
   process.exitCode = 1;
   await closeDb().catch(() => {});
 });

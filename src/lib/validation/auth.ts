@@ -42,6 +42,17 @@ export const changePasswordSchema = z
     message: "Les mots de passe ne correspondent pas",
   });
 
+/** Premier mot de passe d'un compte créé via Google (aucun mot de passe actuel à confirmer). */
+export const setInitialPasswordSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Les mots de passe ne correspondent pas",
+  });
+
 export const profileSchema = z.object({
   fullName: requiredText("Nom complet", 2, 120),
   phone: optionalText(40),

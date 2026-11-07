@@ -7,7 +7,7 @@ import { migrationStatus } from "../src/lib/db/migrate";
 
 async function main() {
   const db = await getDb();
-  console.info(`[organix] Moteur : ${db.driver}`);
+  console.info(`[excellence360] Moteur : ${db.driver}`);
   await db.privileged(async (tx) => {
     const status = await migrationStatus(tx);
     for (const item of status) {
@@ -18,6 +18,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("[organix] Migration impossible :", error);
+  console.error("[excellence360] Migration impossible :", error);
   process.exitCode = 1;
 });

@@ -19,6 +19,10 @@ const envKeys = [
   "RESEND_API_KEY",
   "APP_URL",
   "NEXT_PUBLIC_APP_URL",
+  "NETLIFY",
+  "CONTEXT",
+  "URL",
+  "DEPLOY_PRIME_URL",
   "STORAGE_DRIVER",
   "SUPABASE_URL",
   "SUPABASE_SERVICE_ROLE_KEY",
@@ -139,6 +143,20 @@ describe("e-mails transactionnels", () => {
     expect(appBaseUrl()).toBe("http://localhost:3000");
     process.env.APP_URL = "https://app.organix.test/";
     expect(appBaseUrl()).toBe("https://app.organix.test");
+  });
+
+  it("déduit l'URL publique fournie par Netlify, sans variable dupliquée", () => {
+    process.env.NETLIFY = "true";
+    process.env.CONTEXT = "deploy-preview";
+    process.env.DEPLOY_PRIME_URL = "https://deploy-preview-4--crm.netlify.app/";
+    expect(appBaseUrl()).toBe("https://deploy-preview-4--crm.netlify.app");
+
+    process.env.CONTEXT = "production";
+    process.env.URL = "https://crm.exemple.com/";
+    expect(appBaseUrl()).toBe("https://crm.exemple.com");
+
+    process.env.APP_URL = "https://crm.domaine-personnalise.test/";
+    expect(appBaseUrl()).toBe("https://crm.domaine-personnalise.test");
   });
 });
 

@@ -11,7 +11,13 @@ import {
   resetPasswordWithToken,
   revokeSession,
 } from "@/lib/auth/service";
-import { clearActiveOrgCookie, clearSessionCookie, readSessionToken, writeSessionCookie } from "@/lib/auth/cookies";
+import {
+  clearActiveOrgCookie,
+  clearMfaChallengeCookie,
+  clearSessionCookie,
+  readSessionToken,
+  writeSessionCookie,
+} from "@/lib/auth/cookies";
 import { rateLimit } from "@/lib/rate-limit";
 import { guard, failure, success, type ActionResult } from "@/lib/server/action";
 import {
@@ -94,10 +100,17 @@ export async function mfaLoginAction(
       return failure(result.message, result.code);
     }
 
+    await clearMfaChallengeCookie();
     await writeSessionCookie(result.data.token, result.data.expiresAt);
     const memberships = await listMemberships(result.data.user.id);
     redirect(memberships.length === 0 ? "/onboarding" : "/app");
   });
+}
+
+/** Abandonne une double authentification en cours et revient au formulaire de connexion. */
+export async function cancelMfaLoginAction(): Promise<void> {
+  await clearMfaChallengeCookie();
+  redirect("/connexion");
 }
 
 export async function registerAction(

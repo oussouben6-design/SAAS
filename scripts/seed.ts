@@ -904,7 +904,7 @@ async function seedHrFinance(
 
   await tx.query(
     `insert into announcements (organization_id, title, body, audience, is_pinned, created_by)
-     values ($1, 'Bienvenue dans la démonstration ORGANIX', $2, 'all', true, $3)`,
+     values ($1, 'Bienvenue dans la démonstration Excellence 360 CRM', $2, 'all', true, $3)`,
     [
       orgId,
       "Cet espace contient uniquement des données fictives. Toute donnée réelle doit être créée dans une organisation distincte, marquée comme production.",

@@ -4,7 +4,7 @@
  * Fonction pure (aucun accès réseau) afin d'être testable et utilisable en CI comme au build :
  * `npm run env:check` échoue si la configuration ne peut pas fonctionner sur la cible.
  */
-import { detectPlatform, type PlatformEnvironment } from "./platform";
+import { appUrlFromEnvironment, detectPlatform, type PlatformEnvironment } from "./platform";
 
 export interface EnvCheckOptions {
   serverless?: boolean;
@@ -132,7 +132,10 @@ export function checkEnvironment(
   }
 
   // ---------------------------------------------------------------- application
-  const appUrl = env.APP_URL ?? "";
+  const appUrl = appUrlFromEnvironment(env) ?? "";
+  if (!env.APP_URL && !env.NEXT_PUBLIC_APP_URL && appUrl && platform === "netlify") {
+    notes.push(`APP_URL non définie : URL Netlify utilisée (${appUrl}).`);
+  }
   if (!appUrl) {
     errors.push("APP_URL est requise (liens d'e-mail et redirections).");
   } else {
@@ -153,6 +156,23 @@ export function checkEnvironment(
       "MFA_ENCRYPTION_KEY absente ou invalide (32 octets base64 attendus) : la double authentification " +
         "sera indisponible. Générez-la avec `openssl rand -base64 32`.",
     );
+  }
+
+  // Connexion avec Google (OAuth) : optionnelle, mais les deux variables vont ensemble.
+  const googleClientId = env.GOOGLE_CLIENT_ID?.trim();
+  const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
+  if ((googleClientId && !googleClientSecret) || (!googleClientId && googleClientSecret)) {
+    errors.push(
+      "GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET doivent être définies ensemble (ou aucune des deux) : " +
+        "la connexion Google resterait sinon affichée mais toujours en échec.",
+    );
+  } else if (googleClientId && googleClientSecret) {
+    const redirectUri = `${(appUrl || "http://localhost:3000").replace(/\/$/, "")}/api/auth/google/callback`;
+    notes.push(
+      `Connexion Google activée — URI de redirection à déclarer dans Google Cloud : ${redirectUri}`,
+    );
+  } else {
+    notes.push("Connexion Google désactivée (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET absentes).");
   }
 
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();

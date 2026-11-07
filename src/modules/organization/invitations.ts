@@ -129,11 +129,11 @@ export async function inviteMember(
   const mail = await sendMail({
     to: email,
     kind: "invitation",
-    subject: `ORGANIX — Invitation à rejoindre ${result.organizationName}`,
+    subject: `Excellence 360 CRM — Invitation à rejoindre ${result.organizationName}`,
     actionUrl: `${appBaseUrl()}/invitations/${token}`,
     lines: [
       `Bonjour ${input.fullName},`,
-      `${result.inviterName} vous invite à rejoindre « ${result.organizationName} » sur ORGANIX.`,
+      `${result.inviterName} vous invite à rejoindre « ${result.organizationName} » sur Excellence 360 CRM.`,
     ],
   });
 

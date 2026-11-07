@@ -31,6 +31,25 @@
 - Le middleware ne fait qu'une redirection sur présence de cookie : **aucune décision de sécurité**
   n'y est prise.
 
+### Connexion avec Google (OAuth 2.0 / OpenID Connect)
+
+- Flux **Authorization Code + PKCE (S256)**, `state` anti-CSRF et `nonce` anti-rejeu, conservés
+  10 minutes dans un cookie `httpOnly` limité au chemin `/api/auth/google` (`src/lib/auth/google.ts`).
+- Le jeton d'identité est vérifié intégralement avant toute session : signature **RS256** contre
+  les clés publiques Google (JWKS, mises en cache selon `Cache-Control`), émetteur, **audience**
+  (= notre `GOOGLE_CLIENT_ID`), expiration (dérive tolérée 5 min), nonce, et
+  **`email_verified` obligatoire** — un jeton forgé ou rejoué est refusé (tests unitaires avec
+  signature RSA réelle : `tests/unit/google.test.ts`).
+- Liaison de compte : identifiant Google stable (`sub`, table `user_identities`) ; à la première
+  connexion, un compte existant avec la même adresse **vérifiée par Google** est lié
+  automatiquement. Un compte créé via Google n'a pas de mot de passe (il peut en définir un
+  ensuite depuis son profil). Comptes désactivés refusés ; `AUTH_ALLOW_REGISTRATION=false`
+  bloque la création via Google comme via le formulaire.
+- La **double authentification TOTP reste exigée après Google** (même défi que post-mot de passe,
+  transmis par cookie `httpOnly` de 5 minutes) : Google ne contourne pas le second facteur.
+- Aucun jeton Google (accès/actualisation) n'est conservé : seul le jeton d'identité est consommé
+  puis oublié (`access_type=online`).
+
 ## Autorisation
 
 - Le catalogue fait foi en base (`permissions`, `role_permissions`) ; `src/lib/permissions` en est

@@ -59,7 +59,7 @@ export function resolveStorageDir(): string {
 
 export function defaultBackupDir(now = new Date()): string {
   const stamp = now.toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
-  return path.join(process.cwd(), "backups", `organix-${stamp}`);
+  return path.join(process.cwd(), "backups", `excellence360-${stamp}`);
 }
 
 async function readAppVersion(): Promise<string> {
@@ -311,7 +311,7 @@ export async function verifyBackup(backupDir: string): Promise<VerifyBackupResul
 
 async function mkdtempDir(): Promise<string> {
   const { mkdtemp } = await import("node:fs/promises");
-  return mkdtemp(path.join(os.tmpdir(), "organix-verify-"));
+  return mkdtemp(path.join(os.tmpdir(), "excellence360-verify-"));
 }
 
 export interface RestoreOptions {

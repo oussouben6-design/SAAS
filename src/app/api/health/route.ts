@@ -35,7 +35,7 @@ export async function GET() {
       { status: healthy ? 200 : 503, headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {
-    console.error("[organix:health] indisponible", error);
+    console.error("[excellence360:health] indisponible", error);
     return NextResponse.json(
       { status: "error", message: "Base de données indisponible." },
       { status: 503, headers: { "Cache-Control": "no-store" } },
