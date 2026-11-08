@@ -143,3 +143,61 @@ describe("contrôle de configuration avant déploiement", () => {
     );
   });
 });
+
+describe("variables à définir (remedes du controle de configuration)", () => {
+  it("liste les variables obligatoires absentes, sans jamais divulguer de valeur", () => {
+    const withoutSecrets = { ...serverlessBase } as Record<string, string>;
+    delete withoutSecrets.DATABASE_URL;
+    delete withoutSecrets.SUPABASE_URL;
+    delete withoutSecrets.SUPABASE_SERVICE_ROLE_KEY;
+
+    const result = checkEnvironment(withoutSecrets);
+
+    expect(result.errors).toHaveLength(3);
+    expect(result.missing).toEqual([
+      "DATABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "SUPABASE_URL",
+    ]);
+    const dump = JSON.stringify(result);
+    expect(dump).not.toContain("abcdefghij");
+    expect(dump).not.toContain("MOTDEPASSE");
+    expect(dump).not.toContain("cle-service-role");
+  });
+
+  it("reste vide et sans remede lorsque la configuration est complete", () => {
+    const result = checkEnvironment(serverlessBase);
+
+    expect(result.errors).toEqual([]);
+    expect(result.missing).toEqual([]);
+    expect(result.recommended).toEqual([]);
+  });
+
+  it("signale les variables non bloquantes a poser avant le premier deploiement", () => {
+    const noOptional = { ...serverlessBase } as Record<string, string>;
+    delete noOptional.MFA_ENCRYPTION_KEY;
+    delete noOptional.MAINTENANCE_SECRET;
+
+    const result = checkEnvironment(noOptional);
+
+    expect(result.errors).toEqual([]);
+    expect(result.recommended).toEqual(["MAINTENANCE_SECRET", "MFA_ENCRYPTION_KEY"]);
+  });
+
+  it("rend RESEND_API_KEY obligatoire des que le transport est resend", () => {
+    const mailOnly = { ...serverlessBase, RESEND_API_KEY: "" } as Record<string, string>;
+
+    const result = checkEnvironment(mailOnly);
+
+    expect(result.missing).toEqual(["RESEND_API_KEY"]);
+  });
+
+  it("avertit du transport console meme sans NODE_ENV pose au build serverless", () => {
+    const noEnvFlag = { ...serverlessBase, MAIL_TRANSPORT: "console" } as Record<string, string>;
+    delete noEnvFlag.NODE_ENV;
+
+    const result = checkEnvironment(noEnvFlag);
+
+    expect(result.warnings.join(" ")).toMatch(/MAIL_TRANSPORT=console n'envoie aucun e-mail/);
+  });
+});

@@ -87,7 +87,7 @@ Les objets ont été reconstruits à l'identique en `0015`→`0019` (leurs ACL a
    `withSession()` du serveur. Résultat mesuré : pour toute voie HTTP, `current_user_id()` vaut
    `null`, donc `app.has_permission(...)` est faux et les politiques `*_select` filtrent à zéro
    ligne. Les RPC appelables par `authenticated` — y compris les trois ajoutées par
-   `0016`/`0018` — **rejetaient systématiquement** leurs appelants, et Realtime ne délivre rien.
+   `0016`/`0018` — **rejetaient systématiquement** leurs appelants, et Realtime ne délivrait rien.
    C'est le défaut que corrige `0022`, et la raison pour laquelle le dépôt doit **choisir** son
    modèle (§ 5).
 2. **Durcissement `0013` annulé.** `authenticated` avait `SELECT/INSERT/UPDATE/DELETE` sur 43 des
@@ -140,7 +140,9 @@ rôles Supabase sur les trois RPC, et supprimer `notifications` de la publicatio
 ```
 PGlite neuve, 23 migrations                 → 49 tables · 133 politiques · 31 déclencheurs · 13 fonctions · 557 colonnes
 npm run db:audit (après --update du verrou) → « Schéma conforme au dépôt : aucune dérive détectée. »
-npm test                                    → 136/136 tests en 20 fichiers (dont 6 nouveaux sur le contexte JWT)
+npm test                                    → 141/141 tests en 20 fichiers (dont 6 sur le
+#                                             contexte JWT et 5 sur les remèdes du
+#                                             contrôle de configuration)
 npx tsc --noEmit · npx eslint .             → 0 erreur
 Simulation de dérive (5 entrées de journal, 5 politiques, 1 fonction en plus)
                                             → 4 anomalies signalées, code de sortie 1

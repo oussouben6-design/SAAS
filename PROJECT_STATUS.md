@@ -1,6 +1,7 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **7 novembre 2026** (branche `arena/f0c16e84-saas`, après fusion de la PR #4 dans `main`).
+Dernière mise à jour : **7 novembre 2026** (après fusion des PR #5 et #6 dans `main` ; 23 migrations,
+schéma conforme au dépôt et vérifié en base).
 
 Ce document décrit l'état **réellement vérifié** du produit. Aucune fonctionnalité n'y est déclarée
 comme opérationnelle sans test automatisé ou vérification HTTP associée. Les éléments non terminés
@@ -19,15 +20,18 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **130 tests / 130** en 19 fichiers (~66 s) |
+| `npm test` (Vitest) | ✅ **141 tests / 141** en 20 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT et 5 sur les remèdes du contrôle de configuration |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
+| `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
-| Supervision / vérification | ✅ `GET /api/health` (200, 14/14 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
-| CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #4 (run `42419604735` : types, lint, 130 tests, préflight Netlify, build). Étape « Audit de schéma » ajoutée sur cette branche |
+| Supervision / vérification | ✅ `GET /api/health` (200, 23/23 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** |
+| CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #6 (run `42422750335` : types, lint, 136 tests, préflight Netlify, **audit de schéma**, build). Les six étapes passent ; `npm run test:e2e` (Playwright) n’est pas à la CI |
+| Base de production | ✅ **assainie** : 0 compte orphelin (4 profils résiduels de `smoke-*@excellence360.test` supprimés le 8 nov., aucune référence possible : toutes les autres tables étaient vides), `auth.users = 0`, journal `app.migrations` à 23 = 23 fichiers du dépôt, 133 politiques dont 0 lisible sans restriction, RLS forcée sur 49/49 |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
-| Déploiement | ⚠️ **Aucun** — voir `docs/deploiement.md` |
+| Déploiement | ⚠️ **Bloqué côté Netlify, pas côté dépôt** — le build échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site** (portée builds **et** fonctions) : `docs/netlify.md` § 3 et § 3.1 |
+| Extensions `pg_cron` / `pg_net` | ⚠️ **Non installées** — sans effet sur la purge des sessions, assurée par `.github/workflows/cron.yml` + `MAINTENANCE_SECRET` ; à activer seulement pour le keep-alive du projet gratuit (`docs/supabase.md` § 7) |
 
 ---
 
@@ -35,7 +39,7 @@ sont explicitement listés.
 
 | Module | État | Ce qui fonctionne réellement | Ce qui manque |
 | --- | --- | --- | --- |
-| Supabase (offre gratuite) | 🟡 Appliqué, **en attente de correctif** | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` disponibles. Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma appliqué (14 migrations, 5 nov.). **Dérive constatée le 7 nov.** : 5 migrations appliquées hors Git et privilèges `0013` annulés. **Corrections `0015`→`0023` rejouées sur la base** le 7 nov. à 22:5x UTC et vérifiées (133 politiques, 0 politique lisible sans restriction, 1 seul privilège `authenticated` toléré, RLS forcée sur 49/49, journal à 23 entrées) ([`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
+| Supabase (offre gratuite) | 🟡 Appliqué et vérifié, **en attente des secrets Netlify** | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` **non installés** (à activer dans Supabase → Extensions). Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma appliqué (14 migrations le 5 nov., 23 depuis). **Dérive constatée le 7 nov.** : 5 migrations appliquées hors Git et privilèges `0013` annulés. **Corrections `0015`→`0023` rejouées sur la base** le 7 nov. à 22:5x UTC et vérifiées (133 politiques, 0 politique lisible sans restriction, 1 seul privilège `authenticated` toléré, RLS forcée sur 49/49, journal à 23 entrées) ([`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
 | Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours), **connexion Google OAuth/OIDC** (PKCE, vérification du jeton, liaison de compte, MFA conservée) | Activation 2FA facultative ; transport SMTP non implémenté ; identifiants Google réels à configurer pour une connexion effective |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
@@ -67,14 +71,15 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 19 passed (19) · Tests 130 passed (130) · ~66 s
-npm run build           → succès (vérifié le 5 novembre 2026)
+npm test                → Test Files 20 passed (20) · Tests 141 passed (141) · ~80 s
+npm run build           → succès (étape « Build de production » de la CI, run 42422750335)
 Netlify (simulation)     → env:check + build OK avec valeurs factices, sans connexion externe
-npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
+npm run env:check (simulation Netlify) → 0 erreur avec les secrets factices ; 4 erreurs,
+chacune suivie du lieu de saisie et de la source de la valeur, dès qu’un secret manque
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
-npm run db:backup -- --verifier → empreintes OK, 49 tables, 128 politiques RLS
+npm run db:backup -- --verifier → empreintes OK, 49 tables, 133 politiques RLS
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
-npm run db:migrate      → 14/14 migrations, 49 tables, 128 politiques RLS
+npm run db:migrate      → 23/23 migrations, 49 tables, 133 politiques RLS
 ```
 
 | Fichier | Couverture |
@@ -119,9 +124,11 @@ télécharger dans cet environnement.
 - Flux Google vérifié en HTTP avec des identifiants de démonstration : bouton sur connexion/inscription,
   redirection OAuth avec PKCE/state/nonce, refus d'un `state` falsifié et gestion de l'annulation (7/7) ;
   non-régression de la connexion par mot de passe (4/4). **Un compte Google réel reste à tester.**
-- `npm run env:check (simulation Netlify) → configuration valide ; 4 erreurs détectées sur une config PGlite/local
-npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
-  métier, `/api/health` → `ok`, 14/14 migrations).
+- Préflight `npm run env:check` en simulation Netlify : **0 erreur** avec les trois secrets
+  (valeurs factices, aucune connexion externe) et **4 erreurs** assorties de leur remède dès
+  qu’un secret manque — cas du premier déploiement Netlify.
+- `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
+  métier, `/api/health` → `ok`, 23/23 migrations).
 - Bandeau « Espace de démonstration » présent sur toutes les pages de l'organisation `is_demo`.
 - ⚠️ 500 transitoire observé au **premier** rendu d'une route en développement
   (`ArrayBuffer is not detachable`) : spécifique à Next.js dev + PGlite, disparaît au rechargement ;
@@ -195,7 +202,7 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 1. **Finaliser la connexion Google** : créer les identifiants OAuth dans Google Cloud, déclarer
    `<APP_URL>/api/auth/google/callback`, renseigner les secrets dans l'environnement et tester une
    connexion réelle (guide : `docs/configuration.md`).
-2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 14 migrations, tester
+2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 23 migrations, tester
    une restauration, exécuter le workflow CI sur GitHub et déployer sur Netlify.
 3. **Transport d'e-mail réel** : fournir une clé Resend (gratuit) et un domaine vérifié ; activer
    ensuite la vérification d'adresse obligatoire.
@@ -225,7 +232,7 @@ politique ouvrant une lecture inter-organisations, ni dans le dépôt ni en base
 
 État : `0015`→`0023` appliquées **et vérifiées** en base (définition de `app.current_user_id()`
 identique au dépôt, empreinte md5 contrôlée des deux côtés), garde `npm run db:audit` en CI,
-modèle « RPC assumé » retenu et écrit dans `docs/audit-derive-supabase.md` § 5. 136/136 tests, dont
+modèle « RPC assumé » retenu et écrit dans `docs/audit-derive-supabase.md` § 5. 141/141 tests, dont
 6 nouveaux sur le contexte JWT (`tests/integration/jwt-rls-context.test.ts`).
 
 ## 9. Décisions de périmètre à valider
