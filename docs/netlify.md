@@ -33,17 +33,40 @@ l'application refuse explicitement de démarrer dans ce cas
 1. [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project**.
 2. Choisir **GitHub**, autoriser, sélectionner le dépôt `oussouben6-design/SAAS`, branche `main`.
 3. Netlify lit **`netlify.toml`** : commande de build
-   `npm run env:check && npm run build`, publication `.next`, Node 22.
-   Laisser les champs vides (ils sont déjà définis) et cliquer sur **Deploy**.
+   `npm run env:check && npm run build`, publication `.next`, Node 22. Laisser les champs vides
+   (ils sont déjà définis) et cliquer sur **Deploy**. Le `env:check` ne s'applique qu'aux
+   déploiements de **production** : les aperçus (`deploy-preview`, `branch-deploy`) lancent
+   `npm run build` seul, parce qu'ils n'ont pas à porter les secrets du site. `next build` est
+   vérifié sans aucune variable (build complet, code 0) et la CI continue de contrôler la logique
+   d'`env:check` avec des valeurs factices.
 4. Le build échoue volontairement si la configuration d'environnement est incomplète
    (`npm run env:check`, première étape de la commande de build) : le message liste chaque
    variable manquante, où la renseigner et d'où tirer sa valeur, sans jamais afficher de secret.
    C'est normal au premier essai : il n'y a rien à corriger dans le dépôt quand le build échoue
    ainsi. Voir le § 3.1 si les variables sont déjà saisies.
 
+### 2.1 Un seul site Netlify par dépôt (sinon : variables introuvables et checks rouges)
+
+Chaque **import** du dépôt crée un site Netlify *distinct*, avec **son propre jeu de variables
+d'environnement** : les saisir sur l'un ne les apporte pas aux autres. Ce dépôt a déjà été importé
+plusieurs fois — Netlify construit le même code depuis cinq sites, ce qui produit deux effets
+trompeurs :
+
+- le site que l'on configure n'est pas forcément celui dont on lit le log, d'où un « j'ai pourtant
+  mis la variable » qui ne se débloque jamais ;
+- chaque pull request déclenche cinq builds d'aperçu, donc cinq séries de checks
+  `Pages changed` / `Header rules` / `Redirect rules` en échec tant que le préflight refusait.
+
+À faire une fois : garder **le** site dont *Site configuration → Build & deployment → Branches and
+deploy contexts* déclare `main` comme *production branch*, puis **Destroy site** (Danger zone) sur les
+autres. Si aucun ne le déclare, en créer un seul et détruire les cinq. Les checks Netlify d'une pull
+request ne bloquent pas la fusion : `mergeStateStatus: UNSTABLE` avec une CI `SUCCESS` veut dire
+qu'un ou plusieurs aperçus n'ont pas pu construire, rien de plus.
+
 ## 3. Variables d'environnement (Site configuration → Environment variables)
 
-À renseigner avant le premier déploiement réussi. Utiliser **des valeurs `production`** et cocher
+À renseigner avant le premier déploiement **de production** : les aperçus n'en ont pas besoin
+(§ 2.1 et `netlify.toml`), et une variable saisie sur un autre site du même dépôt n'a aucun effet ici (§ 2.1). Utiliser **des valeurs `production`** et cocher
 *Contains secret values* pour les clés. **Les secrets GitHub Actions ne sont pas transmis à Netlify** :
 ils doivent être définis dans chaque site Netlify (ou via l'API/CLI Netlify). Les valeurs non sensibles
 `DATABASE_POOL_MAX=2`, `AUTO_MIGRATE=false`, `SUPABASE_STORAGE_BUCKET=documents` et
@@ -128,8 +151,12 @@ npm run smoke -- --url https://votre-site.netlify.app \
 
 Contrôles manuels indispensables :
 
-1. Créer le compte réel (ou `admin:create`), se connecter, vérifier l'absence de bandeau de
-   démonstration.
+1. Créer le compte réel. Deux voies : `npm run admin:create -- --email … --name … --org …`
+   (nécessite `DATABASE_URL` en local, donc le mot de passe de base), ou, plus simple pour ce
+   premier compte, **`/inscription` en ligne** : `AUTH_ALLOW_REGISTRATION` est ouverte par défaut.
+   Définir ensuite `AUTH_ALLOW_REGISTRATION=false` dans Netlify et redéployer pour réserver
+   l'accès sur invitation. Vérifier alors l'absence de bandeau de démonstration (la base est vide :
+   `profiles` et `auth.users` étaient à 0 avant ce premier compte).
 2. **Documents** : téléverser un fichier (< 5 Mo), le télécharger, vérifier dans
    *Supabase → Storage → documents* que l'objet existe et que le bucket reste **privé**.
 3. **Notifications en direct** : ouvrir deux onglets connectés du même compte, créer une
@@ -186,7 +213,8 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 | Symptôme | Cause | Correction |
 | --- | --- | --- |
 | Build : « ERREURS bloquantes » | Variable manquante (`npm run env:check`) | Renseigner les variables listées dans le bloc « À définir » du log, puis redéployer |
-| Build refusé **alors que** les variables sont saisies | Portée ne couvrant pas les builds, ou variables ajoutées après le lancement du build | § 3.1 : vérifier le bloc « Resolved config » du log, puis « Clear cache and deploy site » |
+| Cinq sites construisent la même pull request, checks rouges persistants | Dépôt importé plusieurs fois dans Netlify : chaque site a ses propres variables | § 2.1 — garder le site `main` en production, détruire les autres |
+| Build de production refusé **alors que** les variables sont saisies | Portée ne couvrant pas les builds, variables ajoutées après le lancement du build, ou saisies sur un autre site du dépôt | § 3.1 : vérifier le bloc « Resolved config » du log, puis « Clear cache and deploy site » |
 | Build réussi mais téléversement en échec | `SUPABASE_SERVICE_ROLE_KEY` = clé `anon` | Remettre la véritable clé `service_role` : le contrôle de build vérifie la présence, pas la nature de la clé |
 | Notifications jamais reçues en direct | Aucun abonné Realtime (aucun slot de réplication), ou réplication non activée côté projet | Activer Realtime/réplication côté Supabase ; à défaut, les notifications restent lues au rechargement de page |
 | 500 « Base PGlite impossible sur une plateforme serverless » | `DATABASE_MODE` absent ou `pglite` | Mettre `postgres` + `DATABASE_URL` (pooler) |

@@ -13,6 +13,21 @@
   command = "npm run env:check && npm run build"
   publish = ".next"
 
+# Le contrôle de configuration ne s'applique qu'aux déploiements de production.
+# Un aperçu (deploy preview / branch deploy) n'a pas vocation à recevoir les secrets
+# du site — et ne doit pas les recevoir si l'on ne veut pas qu'un aperçu écrive en base.
+# Sans cette réserve, chaque pull request échoue en 20 s sur des variables
+# volontairement absentes, ce qui noie le signal de la CI sous des checks rouges.
+# `next build` seul est validé sans aucune variable d'environnement (vérifié le 8 nov. :
+# build complet, code de sortie 0, en DATABASE_MODE=postgres + STORAGE_DRIVER=supabase).
+# La CI continue de contrôler `env:check` avec des valeurs factices : la logique du
+# garde-fous reste testée, c'est seulement son application aux aperçus qui est levée.
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"
+
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--no-audit --no-fund"

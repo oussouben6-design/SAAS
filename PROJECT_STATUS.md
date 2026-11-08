@@ -30,7 +30,9 @@ sont explicitement listés.
 | Base de production | ✅ **assainie** : 0 compte orphelin (4 profils résiduels de `smoke-*@excellence360.test` supprimés le 8 nov., aucune référence possible : toutes les autres tables étaient vides), `auth.users = 0`, journal `app.migrations` à 23 = 23 fichiers du dépôt, 133 politiques dont 0 lisible sans restriction, RLS forcée sur 49/49 |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
-| Déploiement | ⚠️ **Bloqué côté Netlify, pas côté dépôt** — le build échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site** (portée builds **et** fonctions) : `docs/netlify.md` § 3 et § 3.1 |
+| Déploiement | ⚠️ **Bloqué côté Netlify, pas côté dépôt** — le build de production échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site qui déploie `main`** (portée builds **et** fonctions) : `docs/netlify.md` § 3 et § 3.1 |
+| Sites Netlify branchés | ⚠️ **Cinq** projets construisent le même dépôt, chacun avec son propre jeu de variables — cause directe du « la variable est pourtant saisie » ; à ramener à un (`docs/netlify.md` § 2.1) |
+| Garde-fou réservé à la production | ✅ `netlify.toml` déclare `[context.deploy-preview]` et `[context.branch-deploy]` en `npm run build` : un aperçu ne peut plus échouer sur des secrets qu'il ne doit pas recevoir (`next build` sans aucune variable = code 0, vérifié le 8 nov.) |
 | Extensions `pg_cron` / `pg_net` | ⚠️ **Non installées** — sans effet sur la purge des sessions, assurée par `.github/workflows/cron.yml` + `MAINTENANCE_SECRET` ; à activer seulement pour le keep-alive du projet gratuit (`docs/supabase.md` § 7) |
 
 ---
