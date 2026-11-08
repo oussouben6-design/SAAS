@@ -14,6 +14,10 @@ export interface EnvCheckResult {
   errors: string[];
   warnings: string[];
   notes: string[];
+  /** Variables obligatoires absentes : sert à générer un remède actionnable, pas seulement un constat. */
+  missing: string[];
+  /** Variables non bloquantes mais à définir avant le premier déploiement. */
+  recommended: string[];
 }
 
 function isHttps(url: string): boolean {
@@ -49,6 +53,8 @@ export function checkEnvironment(
   const errors: string[] = [];
   const warnings: string[] = [];
   const notes: string[] = [];
+  const missing = new Set<string>();
+  const recommended = new Set<string>();
 
   const platform = detectPlatform(env);
   const serverless = options.serverless ?? platform !== "node";
@@ -67,6 +73,7 @@ export function checkEnvironment(
   if (mode === "postgres") {
     if (!env.DATABASE_URL) {
       errors.push("DATABASE_MODE=postgres mais DATABASE_URL est absente.");
+      missing.add("DATABASE_URL");
     } else {
       if (!env.DATABASE_URL.startsWith("postgresql://") && !env.DATABASE_URL.startsWith("postgres://")) {
         errors.push("DATABASE_URL doit commencer par postgresql:// (ou postgres://).");
@@ -108,9 +115,13 @@ export function checkEnvironment(
     );
   }
   if (storage === "supabase") {
-    if (!env.SUPABASE_URL) errors.push("SUPABASE_URL est requis lorsque STORAGE_DRIVER=supabase.");
+    if (!env.SUPABASE_URL) {
+      errors.push("SUPABASE_URL est requis lorsque STORAGE_DRIVER=supabase.");
+      missing.add("SUPABASE_URL");
+    }
     if (!env.SUPABASE_SERVICE_ROLE_KEY) {
       errors.push("SUPABASE_SERVICE_ROLE_KEY est requis lorsque STORAGE_DRIVER=supabase (serveur uniquement).");
+      missing.add("SUPABASE_SERVICE_ROLE_KEY");
     }
     if (env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY) {
       errors.push(
@@ -138,6 +149,7 @@ export function checkEnvironment(
   }
   if (!appUrl) {
     errors.push("APP_URL est requise (liens d'e-mail et redirections).");
+    missing.add("APP_URL");
   } else {
     if (!isHttps(appUrl)) {
       if (serverless || env.NODE_ENV === "production") {
@@ -152,6 +164,7 @@ export function checkEnvironment(
   }
 
   if (!validMfaKey(env.MFA_ENCRYPTION_KEY)) {
+    recommended.add("MFA_ENCRYPTION_KEY");
     warnings.push(
       "MFA_ENCRYPTION_KEY absente ou invalide (32 octets base64 attendus) : la double authentification " +
         "sera indisponible. Générez-la avec `openssl rand -base64 32`.",
@@ -177,7 +190,7 @@ export function checkEnvironment(
 
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();
   notes.push(`Transport e-mail : ${mail}`);
-  if (mail === "console" && env.NODE_ENV === "production") {
+  if (mail === "console" && (env.NODE_ENV === "production" || serverless)) {
     warnings.push(
       "MAIL_TRANSPORT=console n'envoie aucun e-mail en production : configurez Resend (gratuit) pour les " +
         "invitations et la réinitialisation de mot de passe.",
@@ -185,6 +198,7 @@ export function checkEnvironment(
   }
   if (mail === "resend" && !env.RESEND_API_KEY) {
     errors.push("MAIL_TRANSPORT=resend mais RESEND_API_KEY est absente.");
+    missing.add("RESEND_API_KEY");
   }
   if (mail === "smtp") {
     errors.push("MAIL_TRANSPORT=smtp n'est pas implémenté : utilisez `resend` ou `console`.");
@@ -196,6 +210,7 @@ export function checkEnvironment(
     );
   }
   if (!env.MAINTENANCE_SECRET) {
+    recommended.add("MAINTENANCE_SECRET");
     warnings.push(
       "MAINTENANCE_SECRET absente : la purge planifiée des sessions via /api/maintenance est désactivée.",
     );
@@ -204,5 +219,11 @@ export function checkEnvironment(
     notes.push("AUTH_ALLOW_REGISTRATION non défini : création libre de compte activée (valeur par défaut).");
   }
 
-  return { errors, warnings, notes };
+  return {
+    errors,
+    warnings,
+    notes,
+    missing: [...missing].sort(),
+    recommended: [...recommended].sort(),
+  };
 }

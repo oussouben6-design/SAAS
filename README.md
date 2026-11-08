@@ -24,7 +24,7 @@ en développement : la base PostgreSQL embarquée **PGlite** (WASM) est utilisé
 git clone <votre-dépôt> organix && cd organix
 npm install
 cp .env.example .env.local          # Windows : copy .env.example .env.local
-npm run db:migrate                  # crée le schéma (14 migrations, idempotentes)
+npm run db:migrate                  # crée le schéma (23 migrations, idempotentes)
 npm run db:seed                     # jeu de DÉMONSTRATION (fictif, clairement identifié)
 npm run dev                         # http://localhost:3000
 ```

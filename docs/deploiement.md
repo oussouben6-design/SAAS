@@ -92,7 +92,7 @@ ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `14/14` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `23/23` migrations
 - [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée
