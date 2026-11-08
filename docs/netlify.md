@@ -174,6 +174,12 @@ Contrôles manuels indispensables :
 
 ## 5. Domaine personnalisé et HTTPS
 
+Avant de tester le domaine, vérifier que le site est **public** : *Site configuration → Access control → Site protection* sur **Public**. Un site laissé sous protection d'équipe répond
+« This site is private — Sign in with an invited Netlify account » à vos utilisateurs, y compris
+après un déploiement vert : Excellence 360 CRM a sa propre authentification (mots de passe scrypt,
+sessions en base, révocation, 2FA) et ses en-têtes CSP/HSTS — un second verrou devant l'application
+n'apporte rien et réserve le site aux seuls comptes Netlify invités.
+
 Site configuration → **Domain management → Add a domain** → suivre les enregistrements DNS
 (A ou CNAME). Netlify provisionne automatiquement un certificat **Let's Encrypt** (gratuit).
 Ensuite, mettre à jour `APP_URL` avec le domaine définitif et redéployer.
@@ -213,6 +219,9 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 | Symptôme | Cause | Correction |
 | --- | --- | --- |
 | Build : « ERREURS bloquantes » | Variable manquante (`npm run env:check`) | Renseigner les variables listées dans le bloc « À définir » du log, puis redéployer |
+| Le site répond « This site is private » | Protection d'accès Netlify activée sur le site ou l'équipe | *Site configuration → Access control* → Public (l'app authentifie elle-même ; voir § 5) |
+| `<slug>.netlify.app` → « Site not found » (404) alors que les aperçus se construisent | Aucun déploiement de production sur ce site : seuls les *deploy previews* existent | Créer le déploiement de production (`main`) sur le site retenu, ou basculer *production branch* sur `main` (§ 2.1) |
+| Aperçu déployé mais pages en erreur de configuration | Volontaire : `netlify.toml` ne passe les secrets qu'en production, et `src/lib/db` lève « DATABASE_MODE=postgres mais DATABASE_URL est absente » | Aucun correctif ; pour des aperçus fonctionnels, il faudrait une base de préproduction séparée et ses propres variables |
 | Cinq sites construisent la même pull request, checks rouges persistants | Dépôt importé plusieurs fois dans Netlify : chaque site a ses propres variables | § 2.1 — garder le site `main` en production, détruire les autres |
 | Build de production refusé **alors que** les variables sont saisies | Portée ne couvrant pas les builds, variables ajoutées après le lancement du build, ou saisies sur un autre site du dépôt | § 3.1 : vérifier le bloc « Resolved config » du log, puis « Clear cache and deploy site » |
 | Build réussi mais téléversement en échec | `SUPABASE_SERVICE_ROLE_KEY` = clé `anon` | Remettre la véritable clé `service_role` : le contrôle de build vérifie la présence, pas la nature de la clé |
