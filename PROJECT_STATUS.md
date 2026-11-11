@@ -1,6 +1,7 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **11 novembre 2026** (branche `arena/b9604082-saas` : **mode personnel** —
+Dernière mise à jour : **11 novembre 2026** (branche `arena/8fe3a9da-saas` : **Netlify + mode personnel** —
+`netlify.toml` déjà en place ; préflight `env:check` accepte le **mode personnel** sans Resend (aucune page de connexion → code e-mail jamais exigé) ; guide netlify.md étendu (§ 8 accès personnel sans compte, § 9 checklist express). S'ajoute au **mode personnel** (branche précédente) —
 bouton démo retiré (retour au site réel) + `PERSONAL_MODE` : accès direct à `/app` sans aucun compte,
 pour un déploiement personnel (voir `docs/mode-personnel.md`, réservé à un usage privé). S'ajoute au
 support Vercel et à la « vérification Google en un clic » ;
@@ -29,7 +30,7 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **158 tests / 158** en 22 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, **9 sur les remèdes du contrôle de configuration** (dont **4 nouveaux Vercel** : préflight, URL native production/preview, garde serverless, limite de téléversement), **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et 4 sur l'exemption Google (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
+| `npm test` (Vitest) | ✅ **159 tests / 159** en 22 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, **9 sur les remèdes du contrôle de configuration** (dont **4 nouveaux Vercel** : préflight, URL native production/preview, garde serverless, limite de téléversement), **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et 4 sur l'exemption Google (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |

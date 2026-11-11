@@ -76,6 +76,23 @@ describe("contrôle de configuration avant déploiement", () => {
     expect(result.errors.join(" ")).toMatch(/NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY/);
   });
 
+  it("mode personnel : le code e-mail n'est pas exigé (aucun écran de connexion)", () => {
+    const personal = checkEnvironment({
+      ...serverlessBase,
+      MAIL_TRANSPORT: "console",
+      PERSONAL_MODE: "true",
+    });
+    expect(personal.errors.join(" ")).not.toMatch(/AUTH_LOGIN_OTP/);
+    expect(personal.notes.join(" ")).toMatch(/[Mm]ode personnel/);
+
+    const off = checkEnvironment({
+      ...serverlessBase,
+      MAIL_TRANSPORT: "console",
+      PERSONAL_MODE: "false",
+    });
+    expect(off.errors.join(" ")).toMatch(/AUTH_LOGIN_OTP/);
+  });
+
   it("refuse le code de connexion (défaut) sans transport réel, sauf désactivation explicite", () => {
     const on = checkEnvironment({ ...serverlessBase, MAIL_TRANSPORT: "console" });
     expect(on.errors.join(" ")).toMatch(/AUTH_LOGIN_OTP/);

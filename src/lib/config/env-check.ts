@@ -196,6 +196,14 @@ export function checkEnvironment(
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();
   const loginOtp = (env.AUTH_LOGIN_OTP ?? "true").trim().toLowerCase() !== "false";
   const loginOtpGoogle = (env.AUTH_LOGIN_OTP_GOOGLE ?? "false").trim().toLowerCase() === "true";
+  // Mode personnel : aucun écran de connexion — le code e-mail n'est jamais exigé,
+  // Resend n'est donc pas requis pour ce déploiement (voir docs/mode-personnel.md).
+  const personalMode = (env.PERSONAL_MODE ?? "").trim().toLowerCase() === "true";
+  if (personalMode) {
+    notes.push(
+      "Mode personnel actif : accès sans authentification (usage privé uniquement — le domaine ne doit pas être public).",
+    );
+  }
   notes.push(`Transport e-mail : ${mail}`);
   notes.push(`Code de connexion par e-mail (AUTH_LOGIN_OTP) : ${loginOtp ? "activé (par défaut)" : "désactivé"}`);
   notes.push(`Code e-mail après Google (AUTH_LOGIN_OTP_GOOGLE) : ${loginOtpGoogle ? "activé" : "désactivé (Google vérifie l'adresse — connexion en un clic)"}`);
@@ -218,11 +226,16 @@ export function checkEnvironment(
         "configurez un transport réel avant d'exiger la vérification.",
     );
   }
-  if (loginOtp && mail === "console" && (env.NODE_ENV === "production" || serverless)) {
+  if (loginOtp && mail === "console" && (env.NODE_ENV === "production" || serverless) && !personalMode) {
     errors.push(
       "AUTH_LOGIN_OTP est activé (comportement par défaut) avec MAIL_TRANSPORT=console : aucun code de " +
         "connexion ne partirait. Configurez MAIL_TRANSPORT=resend (et RESEND_API_KEY), ou définissez " +
         "AUTH_LOGIN_OTP=false pour désactiver temporairement le code de connexion — personne ne pourrait sinon se connecter.",
+    );
+  } else if (loginOtp && mail === "console" && (env.NODE_ENV === "production" || serverless) && personalMode) {
+    notes.push(
+      "Mode personnel : le code de connexion e-mail n'est jamais demandé (aucune page de connexion n'est exposée) " +
+        "— Resend n'est pas requis.",
     );
   }
   if (loginOtp && mail === "smtp") {
