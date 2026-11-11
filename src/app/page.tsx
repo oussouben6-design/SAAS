@@ -15,10 +15,13 @@ import {
 import { BrandLogo } from "@/components/layout/auth-shell";
 import { APP_COMPANY, APP_NAME, APP_SLOGAN, LOGO_FULL } from "@/lib/brand";
 import { getSessionUser } from "@/lib/server/context";
+import { isPersonalMode } from "@/lib/personal";
+import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { NAVIGATION } from "@/lib/navigation";
 
 export default async function LandingPage() {
+  if (isPersonalMode()) redirect("/app"); // accès personnel direct
   const user = await getSessionUser();
 
   const modules = NAVIGATION.flatMap((section) => section.items).filter(

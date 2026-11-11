@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { ensurePersonalWorkspace, isPersonalMode } from "@/lib/personal";
 import { asMember, privileged } from "@/lib/db";
 import { validateSession } from "@/lib/auth/service";
 import { readActiveOrgCookie, readSessionToken } from "@/lib/auth/cookies";
@@ -41,6 +42,12 @@ export interface AppContext {
 }
 
 export const getSessionUser = cache(async (): Promise<AuthUser | null> => {
+  if (isPersonalMode()) {
+    // Mode personnel : aucun compte requis — la requête est traitée comme
+    // l'unique propriétaire réel du déploiement (voir src/lib/personal.ts).
+    const { user } = await ensurePersonalWorkspace();
+    return user;
+  }
   const token = await readSessionToken();
   if (!token) return null;
   const session = await validateSession(token);

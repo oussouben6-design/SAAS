@@ -33,6 +33,7 @@ import { fieldErrors } from "@/lib/validation/common";
 import { ZodError } from "zod";
 import { listMemberships } from "@/lib/server/context";
 import { AppError } from "@/lib/server/errors";
+import { isPersonalMode } from "@/lib/personal";
 
 async function requestMeta() {
   const headerList = await headers();
@@ -222,6 +223,7 @@ export async function registerAction(
 }
 
 export async function logoutAction(): Promise<void> {
+  if (isPersonalMode()) redirect("/app"); // rien à fermer : accès personnel sans compte
   const token = await readSessionToken();
   if (token) await revokeSession(token);
   await clearSessionCookie();

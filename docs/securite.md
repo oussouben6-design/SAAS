@@ -80,6 +80,19 @@
   `tests/integration/google-auth.test.ts` (session directe en un clic après Google,
   `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google → 2FA → session ou code e-mail).
 
+## Authentification : mode personnel (PERSONAL_MODE)
+
+- **Option explicite** (`PERSONAL_MODE=true` au build) : chaque requête est traitée comme le
+  propriétaire réel du déploiement — aucun cookie, mot de passe ou identité requis. Le compte
+  personnel (`personnel@organix.local` par défaut) est provisionné sans identifiant ; l'organisation
+  est réelle (`is_demo=false`), vide, et le propriétaire y a toutes les permissions.
+- Sans cette variable, aucun changement : l'authentification normale (mot de passe + code OTP,
+  Google « en un clic », 2FA) continue de protéger tout le site.
+- **Le mode personnel ne doit jamais être actif sur un domaine public** : toute personne connaissant
+  l'adresse obtient un accès complet. Protection d'accès amont recommandée (Vercel Deployment
+  Protection), et désactivation dès que le site est destiné à plusieurs utilisateurs.
+- Couverture : `tests/integration/personal-mode.test.ts`.
+
 ## Autorisation
 
 - Le catalogue fait foi en base (`permissions`, `role_permissions`) ; `src/lib/permissions` en est

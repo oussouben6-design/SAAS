@@ -115,6 +115,10 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
   adresse et la session s'ouvre directement (la double authentification reste demandée si elle est
   activée).
 
+> **Usage personnel sans aucun compte ?** Le mode personnel (`PERSONAL_MODE=true`)
+> affiche directement votre espace en ouvrant le site, sans inscription ni mot de passe.
+> Voir `docs/mode-personnel.md` — réservé à un usage privé, pas à un domaine public.
+
 ## Paramètres
 
 - **Organisation** : identité, devise, fuseau, langue, départements, **liste de vos organisations
