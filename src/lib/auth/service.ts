@@ -292,6 +292,28 @@ export function loginOtpEnabled(): boolean {
   return (process.env.AUTH_LOGIN_OTP ?? "true").trim().toLowerCase() !== "false";
 }
 
+/**
+ * Le code de connexion est-il aussi exigé après une connexion Google ?
+ * Par défaut NON : le jeton d'identité Google (vérifié côté serveur — signature,
+ * audience, nonce, `email_verified`) prouve la propriété de l'adresse, ce qui en
+ * fait la vérification « en un clic ». La double authentification TOTP, elle,
+ * reste demandée après Google si elle est active sur le compte.
+ * `AUTH_LOGIN_OTP_GOOGLE=true` rétablit le code e-mail après une connexion Google.
+ */
+export function loginOtpGoogleEnabled(): boolean {
+  return (process.env.AUTH_LOGIN_OTP_GOOGLE ?? "false").trim().toLowerCase() === "true";
+}
+
+/**
+ * Canal de connexion porté par un défi MFA (suffixe « .google » ou « .password »).
+ * Le suffixe fait partie du jeton haché stocké : il ne peut pas être modifié par le
+ * client sans invalider le défi. Les défis émis avant cette version (sans suffixe)
+ * sont traités comme « password ».
+ */
+function challengeVia(challenge: string): "password" | "google" {
+  return challenge.endsWith(".google") ? "google" : "password";
+}
+
 /** Crée la session (jeton aléatoire haché, 7 jours) et marque la dernière activité. */
 async function createSession(
   tx: SqlExecutor,
@@ -360,21 +382,25 @@ async function issueLoginChallenge(
 /**
  * Étape finale commune à toutes les connexions dont l'identité est prouvée
  * (mot de passe ou Google) : la double authentification TOTP est exigée si elle
- * est active ; puis, sauf désactivation explicite (AUTH_LOGIN_OTP=false), un
- * code à usage unique est envoyé par e-mail — aucune session n'est créée avant
- * sa saisie. Sinon la session est créée.
+ * est active ; puis, sauf désactivation explicite, un code à usage unique est
+ * envoyé par e-mail — aucune session n'est créée avant sa saisie.
+ * Le code e-mail est désactivable par AUTH_LOGIN_OTP=false (dernier recours) ;
+ * après une connexion Google il n'est PAS exigé par défaut (le jeton d'identité
+ * prouve l'adresse) — AUTH_LOGIN_OTP_GOOGLE=true le rétablit.
+ * Sinon la session est créée.
  */
 async function finishSignIn(
   tx: SqlExecutor,
   user: AuthUser,
   meta: { ip: string | null; userAgent: string | null },
+  options: { via: "password" | "google" } = { via: "password" },
 ): Promise<AuthResult<{ token: string; expiresAt: Date; user: AuthUser }>> {
   const mfa = await tx.query<{ confirmed_at: string }>(
     "select confirmed_at from user_mfa where user_id = $1 and confirmed_at is not null",
     [user.id],
   );
   if (mfa.length > 0) {
-    const challenge = generateToken(32);
+    const challenge = `${generateToken(32)}.${options.via}`;
     const challengeExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
     await tx.query("delete from mfa_challenges where user_id = $1 and expires_at < now()", [user.id]);
     await tx.query(
@@ -390,7 +416,8 @@ async function finishSignIn(
     };
   }
 
-  if (loginOtpEnabled()) {
+  const requireOtp = loginOtpEnabled() && (options.via !== "google" || loginOtpGoogleEnabled());
+  if (requireOtp) {
     const { challenge, previewCode } = await issueLoginChallenge(tx, user, meta);
     return {
       ok: false as const,
@@ -500,7 +527,7 @@ export async function signInWithGoogle(
       );
     }
 
-    const result = await finishSignIn(tx, user, meta);
+    const result = await finishSignIn(tx, user, meta, { via: "google" });
     if (!result.ok) return result;
     return { ok: true as const, data: { ...result.data, accountCreated } };
   });
@@ -585,8 +612,11 @@ export async function completeMfaLogin(input: {
 
     const user = mapProfile(profile);
 
-    // La 2FA franchie n'ouvre pas encore la session : le code OTP e-mail reste exigé.
-    if (loginOtpEnabled()) {
+    // La 2FA franchie n'ouvre pas encore la session : le code OTP e-mail reste exigé —
+    // sauf après une connexion Google (le jeton d'identité prouve déjà l'adresse),
+    // à moins qu'AUTH_LOGIN_OTP_GOOGLE=true ne le rétablisse explicitement.
+    const requireOtp = loginOtpEnabled() && (challengeVia(input.challenge) !== "google" || loginOtpGoogleEnabled());
+    if (requireOtp) {
       const { challenge, previewCode } = await issueLoginChallenge(tx, user, input);
       return {
         ok: false as const,

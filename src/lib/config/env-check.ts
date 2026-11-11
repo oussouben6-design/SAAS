@@ -190,8 +190,10 @@ export function checkEnvironment(
 
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();
   const loginOtp = (env.AUTH_LOGIN_OTP ?? "true").trim().toLowerCase() !== "false";
+  const loginOtpGoogle = (env.AUTH_LOGIN_OTP_GOOGLE ?? "false").trim().toLowerCase() === "true";
   notes.push(`Transport e-mail : ${mail}`);
   notes.push(`Code de connexion par e-mail (AUTH_LOGIN_OTP) : ${loginOtp ? "activé (par défaut)" : "désactivé"}`);
+  notes.push(`Code e-mail après Google (AUTH_LOGIN_OTP_GOOGLE) : ${loginOtpGoogle ? "activé" : "désactivé (Google vérifie l'adresse — connexion en un clic)"}`);
   if (mail === "console" && (env.NODE_ENV === "production" || serverless)) {
     warnings.push(
       "MAIL_TRANSPORT=console n'envoie aucun e-mail en production : configurez Resend (gratuit) pour les " +

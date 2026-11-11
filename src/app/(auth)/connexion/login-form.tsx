@@ -127,6 +127,13 @@ export function LoginForm({
 
   return (
     <div className="space-y-4">
+      {/* Vérification Google en un clic : mise en avant, avant le formulaire. */}
+      {googleEnabled ? (
+        <>
+          <GoogleSignInButton />
+          <AuthDivider />
+        </>
+      ) : null}
       <form action={formAction} className="space-y-4">
         <FormFeedback state={state} />
         <FormField label="Adresse e-mail" htmlFor="email" required>
@@ -142,12 +149,6 @@ export function LoginForm({
         </div>
         <SubmitButton label="Se connecter" pendingLabel="Connexion…" className="w-full" />
       </form>
-      {googleEnabled ? (
-        <>
-          <AuthDivider />
-          <GoogleSignInButton />
-        </>
-      ) : null}
     </div>
   );
 }

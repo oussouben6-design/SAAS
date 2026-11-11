@@ -2,11 +2,13 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   authenticate,
+  completeLoginOtp,
   completeMfaLogin,
   createUserAccount,
   findUserByEmail,
   getGoogleIdentitySummary,
   hasPasswordCredentials,
+  loginOtpGoogleEnabled,
   signInWithGoogle,
   validateSession,
 } from "@/lib/auth/service";
@@ -20,6 +22,23 @@ process.env.MFA_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 const PASSWORD = "MotDePasseSolide2026";
 const META = { ip: "127.0.0.1", userAgent: "vitest" };
 let counter = 0;
+
+/** Exécute `run` avec des variables d'environnement temporaires, puis restaure. */
+async function withEnv<T>(vars: Record<string, string | undefined>, run: () => Promise<T>): Promise<T> {
+  const previous = Object.fromEntries(Object.keys(vars).map((k) => [k, process.env[k]]));
+  for (const [k, v] of Object.entries(vars)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+  try {
+    return await run();
+  } finally {
+    for (const k of Object.keys(vars)) {
+      if (previous[k] === undefined) delete process.env[k];
+      else process.env[k] = previous[k];
+    }
+  }
+}
 
 function googleProfile(overrides: Partial<Parameters<typeof signInWithGoogle>[0]> = {}) {
   counter += 1;
@@ -128,6 +147,123 @@ describe("connexion avec Google", () => {
     } finally {
       delete process.env.AUTH_ALLOW_REGISTRATION;
     }
+  });
+
+  it("ouvre la session en un clic après Google (le code e-mail reste exigé pour le mot de passe)", async () => {
+    await withEnv({ AUTH_LOGIN_OTP: "true", AUTH_LOGIN_OTP_GOOGLE: undefined }, async () => {
+      expect(loginOtpGoogleEnabled()).toBe(false);
+      const profile = googleProfile();
+      const result = await signInWithGoogle(profile, META);
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      const session = await validateSession(result.data.token);
+      expect(session?.user.id).toBe(result.data.user.id);
+    });
+
+    // Contrôle : avec AUTH_LOGIN_OTP=true, le mot de passe passe bien par le code e-mail.
+    const user = await createUserAccount({
+      email: "otp.controle@organix.test",
+      fullName: "Compte Contrôle OTP",
+      password: PASSWORD,
+      emailVerified: true,
+    });
+    expect(user.ok).toBe(true);
+    await withEnv({ AUTH_LOGIN_OTP: "true" }, async () => {
+      const login = await authenticate({ email: "otp.controle@organix.test", password: PASSWORD, ...META });
+      expect(login.ok).toBe(false);
+      if (login.ok) return;
+      expect(login.code).toBe("login_otp_required");
+    });
+  });
+
+  it("AUTH_LOGIN_OTP_GOOGLE=true rétablit le code e-mail après Google", async () => {
+    // Création du compte hors du bloc d'environnement (OTP e-mail forcé par ailleurs).
+    const profile = googleProfile();
+    const first = await signInWithGoogle(profile, META);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    await withEnv({ AUTH_LOGIN_OTP: "true", AUTH_LOGIN_OTP_GOOGLE: "true" }, async () => {
+      const result = await signInWithGoogle(profile, META);
+      expect(result.ok).toBe(false);
+      if (result.ok) return;
+      expect(result.code).toBe("login_otp_required");
+      expect(result.previewCode).toMatch(/^\d{6}$/);
+
+      const completed = await completeLoginOtp({
+        challenge: result.challenge!,
+        code: result.previewCode!,
+        ...META,
+      });
+      expect(completed.ok).toBe(true);
+      if (!completed.ok) return;
+      const session = await validateSession(completed.data.token);
+      expect(session?.user.id).toBe(first.data.user.id);
+    });
+  });
+
+  it("après Google + 2FA : le TOTP est demandé puis la session s'ouvre sans code e-mail", async () => {
+    const profile = googleProfile();
+    const first = await signInWithGoogle(profile, META);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const enrollment = await startEnrollment(first.data.user.id, profile.email);
+    expect(enrollment.ok).toBe(true);
+    if (!enrollment.ok) return;
+    const confirmation = await confirmEnrollment(first.data.user.id, totp(enrollment.data.secret));
+    expect(confirmation.ok).toBe(true);
+
+    await withEnv({ AUTH_LOGIN_OTP: "true", AUTH_LOGIN_OTP_GOOGLE: undefined }, async () => {
+      const challenged = await signInWithGoogle(profile, META);
+      expect(challenged).toMatchObject({ ok: false, code: "mfa_required" });
+      if (challenged.ok || challenged.code !== "mfa_required") return;
+
+      const completed = await completeMfaLogin({
+        challenge: challenged.challenge!,
+        code: totp(enrollment.data.secret),
+        ...META,
+      });
+      expect(completed.ok).toBe(true);
+      if (!completed.ok) return;
+      const session = await validateSession(completed.data.token);
+      expect(session?.user.id).toBe(first.data.user.id);
+    });
+  });
+
+  it("après Google + 2FA avec AUTH_LOGIN_OTP_GOOGLE=true : TOTP puis code e-mail", async () => {
+    const profile = googleProfile();
+    const first = await signInWithGoogle(profile, META);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const enrollment = await startEnrollment(first.data.user.id, profile.email);
+    expect(enrollment.ok).toBe(true);
+    if (!enrollment.ok) return;
+    const confirmation = await confirmEnrollment(first.data.user.id, totp(enrollment.data.secret));
+    expect(confirmation.ok).toBe(true);
+
+    await withEnv({ AUTH_LOGIN_OTP: "true", AUTH_LOGIN_OTP_GOOGLE: "true" }, async () => {
+      const challenged = await signInWithGoogle(profile, META);
+      expect(challenged).toMatchObject({ ok: false, code: "mfa_required" });
+      if (challenged.ok || challenged.code !== "mfa_required") return;
+
+      const afterMfa = await completeMfaLogin({
+        challenge: challenged.challenge!,
+        code: totp(enrollment.data.secret),
+        ...META,
+      });
+      expect(afterMfa.ok).toBe(false);
+      if (afterMfa.ok) return;
+      expect(afterMfa.code).toBe("login_otp_required");
+
+      const completed = await completeLoginOtp({
+        challenge: afterMfa.challenge!,
+        code: afterMfa.previewCode!,
+        ...META,
+      });
+      expect(completed.ok).toBe(true);
+    });
   });
 
   it("applique la double authentification après Google, comme après un mot de passe", async () => {

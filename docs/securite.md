@@ -48,15 +48,21 @@
   bloque la création via Google comme via le formulaire.
 - La **double authentification TOTP reste exigée après Google** (même défi que post-mot de passe,
   transmis par cookie `httpOnly` de 5 minutes) : Google ne contourne pas le second facteur.
+- **« Vérification Google en un clic »** (11 nov. 2026) : après une connexion Google, le code
+  e-mail `login_challenges` n'est **pas** exigé par défaut — le jeton d'identité vérifié tient lieu
+  de preuve d'adresse. `AUTH_LOGIN_OTP_GOOGLE=true` rétablit le code e-mail après Google également ;
+  la chaîne complète devient alors Google → (TOTP si actif) → code e-mail, jamais moins.
 - Aucun jeton Google (accès/actualisation) n'est conservé : seul le jeton d'identité est consommé
   puis oublié (`access_type=online`).
 
 ### Code de connexion par e-mail (OTP)
 
-- **Actif par défaut** (`AUTH_LOGIN_OTP` non défini ou `true`) : après le mot de passe — et après
-  la double authentification TOTP le cas échéant — aucune session n'est créée tant que le code à
-  6 chiffres envoyé à l'adresse du compte n'est pas saisi. La vérification Google déclenche le même
-  second verrou : il n'existe pas de chemin de connexion contournant le code.
+- **Actif par défaut** (`AUTH_LOGIN_OTP` non défini ou `true`) pour le mot de passe : après le mot
+  de passe — et après la double authentification TOTP le cas échéant — aucune session n'est créée
+  tant que le code à 6 chiffres envoyé à l'adresse du compte n'est pas saisi. Après une connexion
+  **Google**, ce second verrou n'est **pas** déclenché par défaut (voir « Vérification Google en un
+  clic ») ; il reste exigé si `AUTH_LOGIN_OTP_GOOGLE=true`. Le mot de passe n'a donc jamais de chemin
+  de connexion contournant le code.
 - Le code est généré avec un aléa cryptographique (`crypto.randomInt`), conservé uniquement en
   **empreinte scrypt** (`algorithm$salt$hash`), à **usage unique**, valable **10 minutes**, avec un
   maximum de **5 tentatives** (le défi est ensuite invalidé, même pour le bon code). Les défis
@@ -70,7 +76,9 @@
 - `AUTH_LOGIN_OTP=false` désactive ce verrou (dernier recours, incidents) ; la double
   authentification TOTP éventuelle reste exigée. Chaque activation de session reste journalisée.
 - Couverture : `tests/integration/login-otp.test.ts` (émission, refus sans session, hash en base,
-  5 essais max, usage unique, chaîne mot de passe → 2FA → OTP, `AUTH_LOGIN_OTP=false`).
+  5 essais max, usage unique, chaîne mot de passe → 2FA → OTP, `AUTH_LOGIN_OTP=false`) et
+  `tests/integration/google-auth.test.ts` (session directe en un clic après Google,
+  `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google → 2FA → session ou code e-mail).
 
 ## Autorisation
 
@@ -126,7 +134,8 @@ annonces) ; les listes des autres modules appliquent le même filtre. La migrati
    expirées, chiffrement au repos applicatif (la base managée le fournit).
    La double authentification TOTP est implémentée (voir ci-dessous) mais reste **facultative** :
    aucun rôle n'est encore contraint de l'activer. Le code OTP par e-mail, lui, est **exigé par
-   défaut** à chaque connexion (désactivable via `AUTH_LOGIN_OTP=false`).
+   défaut** pour le mot de passe (désactivable via `AUTH_LOGIN_OTP=false`) ; après Google il n'est
+   pas exigé par défaut (`AUTH_LOGIN_OTP_GOOGLE=false`).
    **CSP** : appliquée en production, mais sans nonce (Next.js injecte des scripts inline) —
    `script-src 'unsafe-inline'` reste donc nécessaire. Elle bloque les ressources tierces,
    `<object>`, `<base>` détourné et les formulaires externes, pas les injections inline.

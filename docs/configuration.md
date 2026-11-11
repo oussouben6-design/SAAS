@@ -26,7 +26,8 @@ une nouvelle.
 | `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Netlify, `URL`/`DEPLOY_PRIME_URL` sont utilisées si absente |
 | `AUTH_ALLOW_REGISTRATION` | `true` | `false` = comptes créés uniquement par invitation |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Exige une adresse vérifiée pour se connecter |
-| `AUTH_LOGIN_OTP` | `true` | Code à 6 chiffres envoyé par e-mail **à chaque connexion** (mot de passe ou Google), exigé avant l'ouverture de session ; `false` pour désactiver (dernier recours) |
+| `AUTH_LOGIN_OTP` | `true` | Code à 6 chiffres envoyé par e-mail **à chaque connexion par mot de passe**, exigé avant l'ouverture de session ; `false` pour désactiver (dernier recours) |
+| `AUTH_LOGIN_OTP_GOOGLE` | `false` | `true` = le code e-mail est aussi exigé après une connexion Google ; `false` (défaut) = Google vérifie l'adresse tout seul, la connexion est « en un clic » |
 | `GOOGLE_CLIENT_ID` | — (connexion Google désactivée) | ID client OAuth Google (« Application Web ») — voir ci-dessous |
 | `GOOGLE_CLIENT_SECRET` | — | Secret associé ; les deux variables doivent être définies ensemble |
 | `NODE_ENV` | — | `production` active le cookie `Secure` |
@@ -44,6 +45,11 @@ une nouvelle.
   est actif sans transport réel (`MAIL_TRANSPORT=console` ou `smtp`) : configurez Resend, ou posez
   `AUTH_LOGIN_OTP=false` temporairement. La désactivation rend la connexion possible avec le seul
   mot de passe (la 2FA TOTP éventuelle reste exigée) — à réserver aux incidents.
+- **Après une connexion Google**, le code e-mail **n'est pas exigé par défaut**
+  (`AUTH_LOGIN_OTP_GOOGLE=false`) : le jeton d'identité Google, vérifié côté serveur (signature,
+  audience, nonce, `email_verified`), prouve la propriété de l'adresse — c'est la vérification
+  « en un clic ». Si le compte a la double authentification TOTP active, elle reste demandée.
+  `AUTH_LOGIN_OTP_GOOGLE=true` rétablit le code e-mail après Google également.
 - Les sessions sont stockées en base (jeton aléatoire haché, cookie `organix_session`
   `httpOnly` + `SameSite=Lax`). Aucune clé de signature n'est nécessaire.
 
@@ -69,10 +75,12 @@ une nouvelle.
    l'environnement courant.
 
 Comportement : le bouton « Continuer avec Google » n'apparaît que si les deux variables sont
-définies. Un premier passage avec un e-mail déjà connu **lie** le compte existant (l'adresse est
-marquée vérifiée) ; sinon un compte sans mot de passe est créé — sauf si
-`AUTH_ALLOW_REGISTRATION=false`. La double authentification TOTP éventuelle reste demandée
-après Google. Détails de sécurité : [`docs/securite.md`](securite.md).
+définies, et il est affiché **en premier** sur la page de connexion (avant le formulaire). Un
+premier passage avec un e-mail déjà connu **lie** le compte existant (l'adresse est marquée
+vérifiée) ; sinon un compte sans mot de passe est créé — sauf si `AUTH_ALLOW_REGISTRATION=false`.
+La connexion via Google ouvre directement la session (vérification « en un clic ») ; la double
+authentification TOTP éventuelle reste demandée après Google, comme après un mot de passe.
+Détails de sécurité : [`docs/securite.md`](securite.md).
 
 ## E-mails
 
