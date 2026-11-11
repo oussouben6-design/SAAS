@@ -123,12 +123,15 @@ export function StatCard({
   hint,
   icon,
   tone = "default",
+  iconClassName,
 }: {
   label: string;
   value: string | number;
   hint?: string;
   icon?: React.ReactNode;
   tone?: "default" | "success" | "warning" | "danger";
+  /** Puce d'icône personnalisée (ex. couleurs du logo) — remplace le style neutre par défaut. */
+  iconClassName?: string;
 }) {
   const tones = {
     default: "text-foreground",
@@ -144,7 +147,9 @@ export function StatCard({
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
       </div>
       {icon ? (
-        <span className="rounded-lg bg-muted p-2 text-muted-foreground [&_svg]:size-4">{icon}</span>
+        <span className={cn("rounded-lg bg-muted p-2 text-muted-foreground [&_svg]:size-4", iconClassName)}>
+          {icon}
+        </span>
       ) : null}
     </div>
   );

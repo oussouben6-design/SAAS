@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { ensurePersonalWorkspace, isPersonalMode } from "@/lib/personal";
+import { ensurePersonalWorkspace, isPersonalMode, personalIdentity } from "@/lib/personal";
 import { asMember, privileged } from "@/lib/db";
 import { validateSession } from "@/lib/auth/service";
 import { readActiveOrgCookie, readSessionToken } from "@/lib/auth/cookies";
@@ -43,10 +43,9 @@ export interface AppContext {
 
 export const getSessionUser = cache(async (): Promise<AuthUser | null> => {
   if (isPersonalMode()) {
-    // Mode personnel : aucun compte requis — la requête est traitée comme
-    // l'unique propriétaire réel du déploiement (voir src/lib/personal.ts).
-    const { user } = await ensurePersonalWorkspace();
-    return user;
+    // Mode personnel : identité placeholder sans base ; le provisionnement réel
+    // se fait dans requireUser / getAppContext (runtime uniquement).
+    return personalIdentity();
   }
   const token = await readSessionToken();
   if (!token) return null;
@@ -57,6 +56,10 @@ export const getSessionUser = cache(async (): Promise<AuthUser | null> => {
 export async function requireUser(): Promise<AuthUser> {
   const user = await getSessionUser();
   if (!user) redirect("/connexion");
+  if (isPersonalMode()) {
+    const { user: real } = await ensurePersonalWorkspace(); // provisionnement réel (runtime)
+    return real;
+  }
   return user;
 }
 
@@ -158,8 +161,10 @@ export async function loadMemberSummary(
 }
 
 export const getAppContext = cache(async (): Promise<AppContext | null> => {
-  const user = await getSessionUser();
-  if (!user) return null;
+  const sessionUser = await getSessionUser();
+  if (!sessionUser) return null;
+  // Mode personnel : l'identité placeholder n'a pas d'id en base — on provisionne la réelle.
+  const user = isPersonalMode() ? (await ensurePersonalWorkspace()).user : sessionUser;
 
   const memberships = await listMemberships(user.id);
   if (memberships.length === 0) {

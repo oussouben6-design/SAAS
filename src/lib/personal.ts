@@ -66,6 +66,25 @@ export type PersonalWorkspace = {
   user: AuthUser;
 };
 
+const PLACEHOLDER_ID = "00000000-0000-4000-8000-000000000001"; // jamais persisté
+
+/**
+ * Identité placeholder, SANS aucun accès base — sûre à tout moment : build, pré-rendu
+ * des pages statiques, ou simple besoin de connaître « sommes-nous en mode personnel ».
+ * Les vraies requêtes (memberships, permissions, provisionnement) passent par
+ * `ensurePersonalWorkspace()`.
+ */
+export function personalIdentity(): AuthUser {
+  return {
+    id: PLACEHOLDER_ID,
+    email: personalOwnerEmail(),
+    fullName: personalOwnerName(),
+    avatarUrl: null,
+    emailVerifiedAt: null,
+    isActive: true,
+  };
+}
+
 let warned = false;
 
 /**
@@ -74,6 +93,20 @@ let warned = false;
  * fictive ; appelé au plus fort sur le chemin d'accès (cache React par requête).
  */
 export async function ensurePersonalWorkspace(): Promise<PersonalWorkspace> {
+  if (!personalWorkspacePromise) {
+    personalWorkspacePromise = provisionPersonalWorkspace().catch((error: unknown) => {
+      // Échec transitoire (base occupée, verrou…) : ne pas mémoriser l'échec pour toujours.
+      personalWorkspacePromise = null;
+      throw error;
+    });
+  }
+  return personalWorkspacePromise;
+}
+
+let personalWorkspacePromise: Promise<PersonalWorkspace> | null = null;
+
+/** Provisionnement réel (compte + organisation). Mémoïsé par processus via ensurePersonalWorkspace. */
+async function provisionPersonalWorkspace(): Promise<PersonalWorkspace> {
   if (!warned) {
     warned = true;
     console.warn(

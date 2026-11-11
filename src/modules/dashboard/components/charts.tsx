@@ -17,9 +17,9 @@ import {
 } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
-  todo: "#7d99b4",
-  in_progress: "#0057a8",
-  review: "#e8a800",
+  todo: "#75c8fe", // bleu ciel du logo
+  in_progress: "#0057a8", // bleu Excellence 360
+  review: "#ffc300", // or du logo
   done: "#178a5b",
   blocked: "#d63a3a",
 };
