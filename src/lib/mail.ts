@@ -12,7 +12,7 @@
 
 import { appUrlFromEnvironment } from "@/lib/config/platform";
 
-export type MailKind = "email_verification" | "password_reset" | "invitation";
+export type MailKind = "email_verification" | "password_reset" | "invitation" | "login_otp";
 
 export interface MailMessage {
   to: string;
@@ -21,6 +21,8 @@ export interface MailMessage {
   actionUrl: string;
   /** Contenu texte additionnel (nom du destinataire, organisation…). */
   lines?: string[];
+  /** Code à usage unique (kind `login_otp` uniquement) — jamais journalisé en production. */
+  code?: string;
 }
 
 export interface MailResult {
@@ -28,6 +30,8 @@ export interface MailResult {
   transport: string;
   /** Lien d'action renvoyé uniquement lorsque le transport console est utilisé en développement. */
   previewUrl?: string;
+  /** Code OTP renvoyé uniquement lorsque le transport console est utilisé en développement. */
+  previewCode?: string;
   warning?: string;
 }
 
@@ -46,16 +50,22 @@ export async function sendMail(message: MailMessage): Promise<MailResult> {
 
   if (transport === "console") {
     const isProduction = process.env.NODE_ENV === "production";
+    // Le code n'est journalisé qu'en développement : jamais en production.
     console.info(
-      `[excellence360:mail] ${message.kind} -> ${message.to} | ${message.subject} | ${message.actionUrl}`,
+      `[excellence360:mail] ${message.kind} -> ${message.to} | ${message.subject} | ${message.actionUrl}` +
+        (message.code && !isProduction ? ` | code : ${message.code}` : ""),
     );
+    const isOtp = message.kind === "login_otp";
     return {
       delivered: false,
       transport,
-      previewUrl: isProduction ? undefined : message.actionUrl,
+      previewUrl: isProduction || isOtp ? undefined : message.actionUrl,
+      previewCode: isProduction ? undefined : message.code,
       warning: isProduction
         ? "Aucun transport d'e-mail configuré : le message n'a pas été envoyé."
-        : "Mode développement : aucun e-mail n'a été envoyé, le lien est affiché ci-dessous.",
+        : isOtp
+          ? "Mode développement : aucun e-mail n'a été envoyé, le code est affiché ci-dessous."
+          : "Mode développement : aucun e-mail n'a été envoyé, le lien est affiché ci-dessous.",
     };
   }
 
@@ -83,16 +93,18 @@ const MAIL_TEMPLATES: Record<MailKind, { heading: string; cta: string }> = {
   email_verification: { heading: "Vérifiez votre adresse e-mail", cta: "Vérifier mon adresse" },
   password_reset: { heading: "Réinitialisation du mot de passe", cta: "Choisir un nouveau mot de passe" },
   invitation: { heading: "Invitation à rejoindre Excellence 360 CRM", cta: "Accepter l'invitation" },
+  login_otp: { heading: "Votre code de connexion", cta: "Revenir à la connexion" },
 };
 
 export function renderMail(message: MailMessage): { html: string; text: string } {
   const template = MAIL_TEMPLATES[message.kind];
   const lines = message.lines ?? [];
+  const codeBlock = message.code ? ["", `Votre code : ${message.code}`, "Ce code expire dans 10 minutes.", ""] : [];
   const text = [
     template.heading,
     "",
     ...lines,
-    "",
+    ...codeBlock,
     `${template.cta} : ${message.actionUrl}`,
     "",
     "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
@@ -109,6 +121,7 @@ export function renderMail(message: MailMessage): { html: string; text: string }
       <div style="height:3px;background:#ffc000;border-radius:2px;margin:14px 0 20px"></div>
       <h1 style="font-size:20px;margin:0 0 16px">${escapeHtml(template.heading)}</h1>
       ${lines.map((line) => `<p style="font-size:14px;line-height:1.6;margin:0 0 12px">${escapeHtml(line)}</p>`).join("")}
+      ${message.code ? `<p style="font-size:32px;font-weight:800;letter-spacing:.35em;text-align:center;background:#eef4fb;border:1px solid #d9e6f3;border-radius:10px;padding:14px;margin:18px 0;color:#00285e">${escapeHtml(message.code)}</p>` : ""}
       <p style="margin:24px 0">
         <a href="${escapeHtml(message.actionUrl)}" style="display:inline-block;background:#0057a8;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-size:14px">
           ${escapeHtml(template.cta)}

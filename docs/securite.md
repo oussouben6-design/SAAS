@@ -14,6 +14,7 @@
 | Suppression logique (`deleted_at`) filtrée dans les requêtes métier de chaque module | Enregistrements archivés absents des listes et exports | `src/modules/**/service.ts` |
 | Limitation de débit sur connexion / inscription / réinitialisation | Bourrage d'identifiants, envoi massif | `src/lib/rate-limit.ts` |
 | Gestion des sessions par l'utilisateur (liste, révocation individuelle, autres appareils) | Sessions oubliées sur un appareil partagé | `src/lib/auth/service.ts`, `/app/parametres/profil` |
+| Code de connexion par e-mail (OTP), à usage unique, 10 min, 5 essais | Mot de passe compromis seul insuffisant pour ouvrir une session ; code envoyé à la boîte mail du compte | `src/lib/auth/service.ts`, table `login_challenges`, `/connexion` |
 | En-têtes de sécurité (CSP, HSTS en production, COOP, `nosniff`, `Permissions-Policy`) | Inclusion de ressources tierces, sniffing MIME, clickjacking partiel | `next.config.ts` |
 
 ## Authentification
@@ -49,6 +50,27 @@
   transmis par cookie `httpOnly` de 5 minutes) : Google ne contourne pas le second facteur.
 - Aucun jeton Google (accès/actualisation) n'est conservé : seul le jeton d'identité est consommé
   puis oublié (`access_type=online`).
+
+### Code de connexion par e-mail (OTP)
+
+- **Actif par défaut** (`AUTH_LOGIN_OTP` non défini ou `true`) : après le mot de passe — et après
+  la double authentification TOTP le cas échéant — aucune session n'est créée tant que le code à
+  6 chiffres envoyé à l'adresse du compte n'est pas saisi. La vérification Google déclenche le même
+  second verrou : il n'existe pas de chemin de connexion contournant le code.
+- Le code est généré avec un aléa cryptographique (`crypto.randomInt`), conservé uniquement en
+  **empreinte scrypt** (`algorithm$salt$hash`), à **usage unique**, valable **10 minutes**, avec un
+  maximum de **5 tentatives** (le défi est ensuite invalidé, même pour le bon code). Les défis
+  expirés ou consommés sont purgés à chaque émission.
+- Le jeton opaque du défi (32 octets) suit le navigateur via un champ de formulaire (ou un cookie
+  `httpOnly` de 10 minutes après un retour Google) ; il ne donne accès qu'à l'étape de saisie du code.
+- Délivrance : transport `console` en développement (aucun e-mail ne part ; le code est **affiché à
+  l'écran** sur la page de connexion) ; en production, `MAIL_TRANSPORT=resend` + `RESEND_API_KEY`
+  sont requis — `npm run env:check` refuse le déploiement sinon (le code n'est jamais journalisé ni
+  affiché en production).
+- `AUTH_LOGIN_OTP=false` désactive ce verrou (dernier recours, incidents) ; la double
+  authentification TOTP éventuelle reste exigée. Chaque activation de session reste journalisée.
+- Couverture : `tests/integration/login-otp.test.ts` (émission, refus sans session, hash en base,
+  5 essais max, usage unique, chaîne mot de passe → 2FA → OTP, `AUTH_LOGIN_OTP=false`).
 
 ## Autorisation
 
@@ -103,13 +125,16 @@ annonces) ; les listes des autres modules appliquent le même filtre. La migrati
 3. **Pas encore** : révocation de session par un administrateur, purge planifiée des sessions
    expirées, chiffrement au repos applicatif (la base managée le fournit).
    La double authentification TOTP est implémentée (voir ci-dessous) mais reste **facultative** :
-   aucun rôle n'est encore contraint de l'activer.
+   aucun rôle n'est encore contraint de l'activer. Le code OTP par e-mail, lui, est **exigé par
+   défaut** à chaque connexion (désactivable via `AUTH_LOGIN_OTP=false`).
    **CSP** : appliquée en production, mais sans nonce (Next.js injecte des scripts inline) —
    `script-src 'unsafe-inline'` reste donc nécessaire. Elle bloque les ressources tierces,
    `<object>`, `<base>` détourné et les formulaires externes, pas les injections inline.
 4. **Transport d'e-mail** : `console` (développement) et `resend` (HTTP) sont implémentés ; `smtp`
-   ne l'est pas. Sans clé Resend, la vérification d'e-mail ne doit pas être exigée en production.
-   L'envoi Resend n'a pas été testé contre un compte réel dans cet environnement.
+   ne l'est pas. Sans clé Resend, la vérification d'e-mail ne doit pas être exigée en production —
+   et le code de connexion OTP (actif par défaut) empêcherait toute connexion : `env:check` bloque
+   le déploiement dans ce cas. L'envoi Resend n'a pas été testé contre un compte réel dans cet
+   environnement.
 5. **Playwright** : les parcours E2E existent mais n'ont pas été exécutés dans cet environnement
    (navigateurs non téléchargeables). Voir `PROJECT_STATUS.md`.
 

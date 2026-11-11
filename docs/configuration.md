@@ -26,6 +26,7 @@ une nouvelle.
 | `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Netlify, `URL`/`DEPLOY_PRIME_URL` sont utilisées si absente |
 | `AUTH_ALLOW_REGISTRATION` | `true` | `false` = comptes créés uniquement par invitation |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Exige une adresse vérifiée pour se connecter |
+| `AUTH_LOGIN_OTP` | `true` | Code à 6 chiffres envoyé par e-mail **à chaque connexion** (mot de passe ou Google), exigé avant l'ouverture de session ; `false` pour désactiver (dernier recours) |
 | `GOOGLE_CLIENT_ID` | — (connexion Google désactivée) | ID client OAuth Google (« Application Web ») — voir ci-dessous |
 | `GOOGLE_CLIENT_SECRET` | — | Secret associé ; les deux variables doivent être définies ensemble |
 | `NODE_ENV` | — | `production` active le cookie `Secure` |
@@ -35,6 +36,14 @@ une nouvelle.
 - `AUTH_ALLOW_REGISTRATION=false` ferme `/inscription` ; les invitations restent possibles.
 - `AUTH_REQUIRE_EMAIL_VERIFICATION=true` sans transport d'e-mail réel bloque les connexions : ne
   l'activez que lorsque `MAIL_TRANSPORT` est opérationnel.
+- `AUTH_LOGIN_OTP` est **actif par défaut** : après le mot de passe (et après la 2FA le cas échéant),
+  aucune session n'est ouverte tant que le code à 6 chiffres envoyé par e-mail n'est pas saisi
+  (défi à usage unique, 10 minutes de validité, 5 essais, empreinte scrypt en base, jamais le code
+  en clair). En développement (`MAIL_TRANSPORT=console`), aucun e-mail ne part : le code est affiché
+  à l'écran après connexion. En production, `npm run env:check` **refuse le déploiement** si l'OTP
+  est actif sans transport réel (`MAIL_TRANSPORT=console` ou `smtp`) : configurez Resend, ou posez
+  `AUTH_LOGIN_OTP=false` temporairement. La désactivation rend la connexion possible avec le seul
+  mot de passe (la 2FA TOTP éventuelle reste exigée) — à réserver aux incidents.
 - Les sessions sont stockées en base (jeton aléatoire haché, cookie `organix_session`
   `httpOnly` + `SameSite=Lax`). Aucune clé de signature n'est nécessaire.
 

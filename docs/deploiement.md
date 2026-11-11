@@ -81,10 +81,11 @@ AUTO_MIGRATE=false                      # lancer db:migrate dans le pipeline de 
 APP_URL=https://excellence360.example.com
 AUTH_ALLOW_REGISTRATION=false           # invitation uniquement (recommandé)
 AUTH_REQUIRE_EMAIL_VERIFICATION=false   # true seulement si un transport d'e-mail est opérationnel
+AUTH_LOGIN_OTP=true                     # code à 6 chiffres envoyé par e-mail à chaque connexion (défaut ; exige MAIL_TRANSPORT=resend)
 MFA_ENCRYPTION_KEY=                      # openssl rand -base64 32 (recommandé)
 GOOGLE_CLIENT_ID=                        # optionnel : OAuth Google, à définir avec le secret
 GOOGLE_CLIENT_SECRET=                    # redirection : <APP_URL>/api/auth/google/callback
-MAIL_TRANSPORT=console                   # ou `resend` avec RESEND_API_KEY + MAIL_FROM
+MAIL_TRANSPORT=resend                    # EXIGÉ avec AUTH_LOGIN_OTP=true ; console afficherait le code à l'écran et env:check refuserait le déploiement
 STORAGE_DRIVER=local                     # ou `supabase` (bucket privé)
 ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
 ```
@@ -92,7 +93,7 @@ ORGANIX_STORAGE_DIR=/var/lib/excellence360/storage
 ## Liste de vérification avant d'annoncer « en production »
 
 - [ ] PostgreSQL managé, sauvegardes automatiques activées et **restauration testée**
-- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `23/23` migrations
+- [ ] `npm run db:migrate` exécuté, `npm run db:status` → `25/25` migrations
 - [ ] Workflow CI vert sur la version déployée (`.github/workflows/ci.yml`)
 - [ ] `select relrowsecurity, relforcerowsecurity from pg_class where relname in ('customers','invoices','employees');` → `true` partout
 - [ ] `npm run build`, `npm run lint`, `npm run typecheck`, `npm test` verts sur la version déployée

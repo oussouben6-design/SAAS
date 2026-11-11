@@ -6,6 +6,8 @@ export const ACTIVE_ORG_COOKIE = "organix_org";
 export const OAUTH_COOKIE = "organix_oauth";
 /** Défi de double authentification en attente (après Google) — lu par la page de connexion. */
 export const MFA_CHALLENGE_COOKIE = "organix_mfa_challenge";
+/** Défi de code de connexion envoyé par e-mail (OTP) — lu par la page de connexion. */
+export const LOGIN_OTP_COOKIE = "organix_login_otp";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -31,6 +33,10 @@ export function mfaChallengeCookieOptions(maxAgeSeconds: number) {
   return { ...baseCookieOptions(), maxAge: maxAgeSeconds };
 }
 
+export function loginOtpCookieOptions(maxAgeSeconds: number) {
+  return { ...baseCookieOptions(), maxAge: maxAgeSeconds };
+}
+
 export async function readMfaChallengeCookie(): Promise<string | null> {
   const store = await cookies();
   return store.get(MFA_CHALLENGE_COOKIE)?.value ?? null;
@@ -39,6 +45,16 @@ export async function readMfaChallengeCookie(): Promise<string | null> {
 export async function clearMfaChallengeCookie(): Promise<void> {
   const store = await cookies();
   store.set(MFA_CHALLENGE_COOKIE, "", { ...baseCookieOptions(), maxAge: 0 });
+}
+
+export async function readLoginOtpCookie(): Promise<string | null> {
+  const store = await cookies();
+  return store.get(LOGIN_OTP_COOKIE)?.value ?? null;
+}
+
+export async function clearLoginOtpCookie(): Promise<void> {
+  const store = await cookies();
+  store.set(LOGIN_OTP_COOKIE, "", { ...baseCookieOptions(), maxAge: 0 });
 }
 
 export async function readSessionToken(): Promise<string | null> {

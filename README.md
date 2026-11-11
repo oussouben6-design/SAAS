@@ -24,7 +24,7 @@ en développement : la base PostgreSQL embarquée **PGlite** (WASM) est utilisé
 git clone <votre-dépôt> organix && cd organix
 npm install
 cp .env.example .env.local          # Windows : copy .env.example .env.local
-npm run db:migrate                  # crée le schéma (23 migrations, idempotentes)
+npm run db:migrate                  # crée le schéma (25 migrations, idempotentes)
 npm run db:seed                     # jeu de DÉMONSTRATION (fictif, clairement identifié)
 npm run dev                         # http://localhost:3000
 ```
@@ -57,7 +57,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
-| `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` |
+| `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` (`--otp-code` si le code de connexion est exigé) |
 | `npm run env:check` | Valide la configuration avant déploiement (Netlify, Supabase, secrets) ; code 1 si bloquant |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 

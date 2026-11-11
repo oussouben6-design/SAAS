@@ -189,7 +189,9 @@ export function checkEnvironment(
   }
 
   const mail = (env.MAIL_TRANSPORT ?? "console").toLowerCase();
+  const loginOtp = (env.AUTH_LOGIN_OTP ?? "true").trim().toLowerCase() !== "false";
   notes.push(`Transport e-mail : ${mail}`);
+  notes.push(`Code de connexion par e-mail (AUTH_LOGIN_OTP) : ${loginOtp ? "activé (par défaut)" : "désactivé"}`);
   if (mail === "console" && (env.NODE_ENV === "production" || serverless)) {
     warnings.push(
       "MAIL_TRANSPORT=console n'envoie aucun e-mail en production : configurez Resend (gratuit) pour les " +
@@ -207,6 +209,19 @@ export function checkEnvironment(
     errors.push(
       "AUTH_REQUIRE_EMAIL_VERIFICATION=true avec MAIL_TRANSPORT=console bloquerait tous les comptes : " +
         "configurez un transport réel avant d'exiger la vérification.",
+    );
+  }
+  if (loginOtp && mail === "console" && (env.NODE_ENV === "production" || serverless)) {
+    errors.push(
+      "AUTH_LOGIN_OTP est activé (comportement par défaut) avec MAIL_TRANSPORT=console : aucun code de " +
+        "connexion ne partirait. Configurez MAIL_TRANSPORT=resend (et RESEND_API_KEY), ou définissez " +
+        "AUTH_LOGIN_OTP=false pour désactiver temporairement le code de connexion — personne ne pourrait sinon se connecter.",
+    );
+  }
+  if (loginOtp && mail === "smtp") {
+    errors.push(
+      "AUTH_LOGIN_OTP est activé mais MAIL_TRANSPORT=smtp n'est pas implémenté : " +
+        "configurez resend, ou AUTH_LOGIN_OTP=false.",
     );
   }
   if (!env.MAINTENANCE_SECRET) {

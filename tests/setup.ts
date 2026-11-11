@@ -14,3 +14,5 @@ process.env.APP_URL = "http://localhost:3000";
 process.env.STORAGE_DRIVER = "local";
 process.env.ORGANIX_STORAGE_DIR = mkdtempSync(path.join(tmpdir(), "organix-storage-"));
 process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = "false";
+// Le code de connexion OTP est testé dans tests/integration/login-otp.test.ts (qui l’active explicitement).
+process.env.AUTH_LOGIN_OTP = "false";

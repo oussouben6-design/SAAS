@@ -7,9 +7,11 @@ import {
   verifyGoogleIdToken,
 } from "@/lib/auth/google";
 import {
+  LOGIN_OTP_COOKIE,
   MFA_CHALLENGE_COOKIE,
   OAUTH_COOKIE,
   SESSION_COOKIE,
+  loginOtpCookieOptions,
   mfaChallengeCookieOptions,
   oauthCookieOptions,
   sessionCookieOptions,
@@ -30,11 +32,14 @@ export const dynamic = "force-dynamic";
 
 /** Le défi MFA expire après 5 minutes côté serveur ; le cookie a la même durée. */
 const MFA_COOKIE_TTL_SECONDS = 300;
+/** Le défi OTP e-mail expire après 10 minutes côté serveur ; le cookie a la même durée. */
+const OTP_COOKIE_TTL_SECONDS = 600;
 
 export async function GET(request: NextRequest) {
   const fail = (erreur: string) => {
     const response = NextResponse.redirect(new URL(`/connexion?erreur=${erreur}`, request.url));
     response.cookies.set(OAUTH_COOKIE, "", oauthCookieOptions(0));
+    response.cookies.set(LOGIN_OTP_COOKIE, "", loginOtpCookieOptions(0));
     return response;
   };
 
@@ -89,6 +94,16 @@ export async function GET(request: NextRequest) {
         );
         return response;
       }
+      if (result.code === "login_otp_required" && result.challenge) {
+        const response = NextResponse.redirect(new URL("/connexion", request.url));
+        response.cookies.set(OAUTH_COOKIE, "", oauthCookieOptions(0));
+        response.cookies.set(
+          LOGIN_OTP_COOKIE,
+          result.challenge,
+          loginOtpCookieOptions(OTP_COOKIE_TTL_SECONDS),
+        );
+        return response;
+      }
       if (result.code === "inactive_account") return fail("compte_desactive");
       if (result.code === "registration_disabled") return fail("inscriptions_fermees");
       return fail("google_echec");
@@ -99,6 +114,7 @@ export async function GET(request: NextRequest) {
       new URL(memberships.length === 0 ? "/onboarding" : "/app", request.url),
     );
     response.cookies.set(OAUTH_COOKIE, "", oauthCookieOptions(0));
+    response.cookies.set(LOGIN_OTP_COOKIE, "", loginOtpCookieOptions(0));
     response.cookies.set(
       SESSION_COOKIE,
       result.data.token,

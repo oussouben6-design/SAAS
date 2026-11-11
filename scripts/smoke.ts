@@ -1,4 +1,4 @@
-import { authenticate } from "../src/lib/auth/service";
+import { authenticate, completeLoginOtp } from "../src/lib/auth/service";
 import { closeDb } from "../src/lib/db";
 
 /**
@@ -8,9 +8,13 @@ import { closeDb } from "../src/lib/db";
  *   npm run smoke -- --url https://organix.example.com
  *   npm run smoke -- --email admin@exemple.com --password '••••'
  *   npm run smoke -- --url https://... --token <jeton de session>
+ *   npm run smoke -- --url https://... --otp-code 123456
  *
  * Le jeton permet de tester une API dont la base n'est pas accessible depuis la machine
  * (ex. base managée). Sans jeton, le script s'authentifie directement en base.
+ * Avec AUTH_LOGIN_OTP actif (défaut), la connexion exige le code à 6 chiffres envoyé
+ * par e-mail : en développement (MAIL_TRANSPORT=console) il est affiché à l'écran et
+ * utilisé automatiquement ; ailleurs, fournissez --otp-code ou utilisez --token.
  */
 
 function arg(name: string, fallback?: string): string | undefined {
@@ -23,6 +27,7 @@ const BASE_URL = (arg("url", process.env.SMOKE_URL ?? "http://127.0.0.1:3000") ?
 const EMAIL = arg("email", process.env.SMOKE_EMAIL ?? "demo.admin@organix.local")!;
 const PASSWORD = arg("password", process.env.SMOKE_PASSWORD ?? process.env.ORGANIX_SEED_PASSWORD ?? "Demo-Organix-2026!")!;
 const TOKEN = arg("token", process.env.SMOKE_TOKEN);
+const OTP_CODE = arg("otp-code", process.env.SMOKE_OTP_CODE);
 
 const PUBLIC_PAGES = ["/", "/connexion"];
 const PRIVATE_PAGES = [
@@ -71,7 +76,31 @@ async function main() {
   if (!healthOk) failures.push(`/api/health → ${health.status} ${JSON.stringify(healthBody)}`);
   let token = TOKEN;
   if (!token) {
-    const login = await authenticate({ email: EMAIL, password: PASSWORD, ip: "smoke", userAgent: "organix-smoke" });
+    let login = await authenticate({ email: EMAIL, password: PASSWORD, ip: "smoke", userAgent: "organix-smoke" });
+    if (!login.ok && login.code === "login_otp_required") {
+      const code = OTP_CODE ?? login.previewCode;
+      if (!code) {
+        console.error(`✗ Connexion de ${EMAIL} : code de vérification envoyé par e-mail (AUTH_LOGIN_OTP).`);
+        console.error("  Relancez avec --otp-code 123456 (le code reçu), utilisez --token, ou AUTH_LOGIN_OTP=false le temps du contrôle.");
+        await closeDb();
+        process.exitCode = 1;
+        return;
+      }
+      const completed = await completeLoginOtp({
+        challenge: login.challenge ?? "",
+        code,
+        ip: "smoke",
+        userAgent: "organix-smoke",
+      });
+      if (!completed.ok) {
+        console.error(`✗ Code de vérification refusé : ${completed.message}`);
+        await closeDb();
+        process.exitCode = 1;
+        return;
+      }
+      login = completed;
+      console.info(`✓ Code de vérification accepté pour ${EMAIL}`);
+    }
     await closeDb();
     if (!login.ok) {
       console.error(`✗ Connexion impossible pour ${EMAIL} : ${login.message}`);

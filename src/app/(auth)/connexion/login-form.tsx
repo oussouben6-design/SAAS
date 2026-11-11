@@ -2,26 +2,92 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { cancelMfaLoginAction, loginAction, mfaLoginAction } from "../actions";
+import { cancelMfaLoginAction, loginAction, loginOtpAction, mfaLoginAction } from "../actions";
 import { FormFeedback, SubmitButton } from "@/components/forms/form-dialog";
 import { FormField, Input } from "@/components/ui/input";
 import { AuthDivider, GoogleSignInButton } from "@/components/layout/google-signin";
 
+/** Extrait le défi + (en développement) le code d'aperçu d'une réponse d'action. */
+function challengeData(
+  state: { ok: boolean; code?: string; data?: unknown } | null,
+  code: "mfa_required" | "login_otp_required",
+): { challenge: string; previewCode: string | null } | undefined {
+  if (!state || state.ok || state.code !== code) return undefined;
+  const data = state.data as { challenge?: string; previewCode?: string | null } | undefined;
+  return data?.challenge ? { challenge: data.challenge, previewCode: data.previewCode ?? null } : undefined;
+}
+
 export function LoginForm({
   googleEnabled = false,
   initialChallenge,
+  initialOtpChallenge,
 }: {
   googleEnabled?: boolean;
   /** Défi MFA en attente après une connexion Google (transmis par cookie httpOnly). */
   initialChallenge?: string;
+  /** Défi du code de connexion envoyé par e-mail, en attente (transmis par cookie httpOnly). */
+  initialOtpChallenge?: string;
 }) {
   const [state, formAction] = useActionState(loginAction, null);
   const [mfaState, mfaFormAction] = useActionState(mfaLoginAction, null);
-  const challengeFromLogin =
-    state && !state.ok && state.code === "mfa_required"
-      ? (state.data as { challenge?: string } | undefined)?.challenge
-      : undefined;
+  const [otpState, otpFormAction] = useActionState(loginOtpAction, null);
+
+  const challengeFromLogin = challengeData(state, "mfa_required")?.challenge;
   const challenge = challengeFromLogin ?? initialChallenge;
+
+  const otpFromMfa = challengeData(mfaState, "login_otp_required");
+  const otpFromLogin = challengeData(state, "login_otp_required");
+  const otp = otpFromMfa ?? otpFromLogin;
+  const otpChallenge = otp?.challenge ?? initialOtpChallenge;
+  const previewCode = otp?.previewCode ?? null;
+
+  if (otpChallenge) {
+    return (
+      <div className="space-y-4">
+        <form action={otpFormAction} className="space-y-4">
+          <FormFeedback state={otpState} />
+          <p className="text-sm text-muted-foreground">
+            Pour terminer la connexion, saisissez le code à 6 chiffres qui vient d&apos;être envoyé à
+            votre adresse e-mail. Il expire dans 10 minutes.
+          </p>
+          {previewCode ? (
+            <p
+              role="status"
+              className="rounded-lg border border-warning/40 bg-warning-soft px-3 py-2 text-sm font-medium text-foreground"
+            >
+              Mode développement : aucun e-mail n&apos;a été envoyé. Code :{" "}
+              <span className="font-mono tracking-[0.3em]">{previewCode}</span>
+            </p>
+          ) : null}
+          <input type="hidden" name="challenge" value={otpChallenge} />
+          <FormField label="Code reçu par e-mail" htmlFor="otp" required>
+            <Input
+              id="otp"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              required
+              minLength={6}
+              maxLength={6}
+              pattern="[0-9]{6}"
+              placeholder="123456"
+              className="tracking-[0.3em]"
+            />
+          </FormField>
+          <SubmitButton label="Vérifier le code" pendingLabel="Vérification…" className="w-full" />
+        </form>
+        <form action={cancelMfaLoginAction}>
+          <button
+            type="submit"
+            className="block w-full text-center text-sm text-primary hover:underline"
+          >
+            Recommencer la connexion
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   if (challenge) {
     return (

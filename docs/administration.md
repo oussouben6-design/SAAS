@@ -69,7 +69,9 @@ s'inscrivent eux-mêmes via `/inscription` puis rejoignent l'organisation sur in
   appliquées (`503` sinon). À brancher sur votre supervision (UptimeRobot, Better Stack, ping
   hébergeur). Aucune donnée métier n'y figure.
 - `npm run smoke -- --url https://votre-domaine` : se connecte réellement et contrôle 17 pages +
-  la sonde de santé. Utilisez `--token` si la base n'est pas accessible depuis la machine de test.
+  la sonde de santé. Comme chaque connexion exige désormais un code envoyé par e-mail
+  (`AUTH_LOGIN_OTP`), utilisez `--otp-code 123456` avec le code reçu, ou `--token` si la base
+  n'est pas accessible depuis la machine de test.
 - `npm run db:status` : moteur, migrations, volumétrie, organisations de démonstration.
 
 ## Journal d'audit
