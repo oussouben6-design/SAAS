@@ -102,9 +102,11 @@ MAX_UPLOAD_BYTES=10485760
   Auth, il n'est pas utilisé.
 - Pour la vérification d'adresse en production, configurez un transport réel (`MAIL_TRANSPORT=resend`
   + `RESEND_API_KEY`), puis `AUTH_REQUIRE_EMAIL_VERIFICATION=true`.
-- Code de connexion (OTP) : `AUTH_LOGIN_OTP` est **actif par défaut** — chaque connexion exige le
-  code à 6 chiffres envoyé par e-mail. Avec `MAIL_TRANSPORT=console`, aucun code ne part :
-  configurez Resend avant la mise en production, ou définissez `AUTH_LOGIN_OTP=false` en attendant.
+- Code de connexion (OTP) : `AUTH_LOGIN_OTP` est **actif par défaut** pour le mot de passe — le
+  code à 6 chiffres envoyé par e-mail est exigé avant la session. Après une connexion Google, il
+  n'est pas exigé par défaut (`AUTH_LOGIN_OTP_GOOGLE=false`, connexion « en un clic »). Avec
+  `MAIL_TRANSPORT=console`, aucun code ne part : configurez Resend avant la mise en production,
+  ou définissez `AUTH_LOGIN_OTP=false` en attendant.
 - Double authentification : définissez `MFA_ENCRYPTION_KEY` (`openssl rand -base64 32`) et conservez
   la clé hors du dépôt ; sans elle, l'activation de la 2FA est refusée.
 

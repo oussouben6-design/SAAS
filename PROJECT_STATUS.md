@@ -1,7 +1,9 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **11 novembre 2026** (branche `arena/1787ab9b-saas` : **code de connexion par
-e-mail (OTP)** à chaque connexion — 25 migrations, schéma conforme au dépôt et vérifié en base).
+Dernière mise à jour : **11 novembre 2026** (branche `arena/3ed9c6c5-saas` : **vérification Google
+« en un clic »** — le code e-mail n'est plus exigé après une connexion Google
+(`AUTH_LOGIN_OTP_GOOGLE=true` pour le rétablir), bouton « Continuer avec Google » mis en avant en
+tête de formulaire ; 25 migrations, schéma conforme au dépôt et vérifié en base).
 
 Ce document décrit l'état **réellement vérifié** du produit. Aucune fonctionnalité n'y est déclarée
 comme opérationnelle sans test automatisé ou vérification HTTP associée. Les éléments non terminés
@@ -20,7 +22,7 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **148 tests / 148** en 21 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, 5 sur les remèdes du contrôle de configuration et **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) |
+| `npm test` (Vitest) | ✅ **152 tests / 152** en 21 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, 5 sur les remèdes du contrôle de configuration, **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et **4 nouveaux sur l'exemption Google** (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
@@ -43,7 +45,7 @@ sont explicitement listés.
 | --- | --- | --- | --- |
 | Supabase (offre gratuite) | 🟡 Appliqué et vérifié, **en attente des secrets Netlify** | Projet `opnlvqwbevnivfjpbrxa` (PG 17, eu-west-3) : bucket privé `documents` créé, `FORCE RLS` + bascule de rôle validées sur Supabase, `pg_cron`/`pg_net` **non installés** (à activer dans Supabase → Extensions). Migrations `0012` (autorisation `SET` du rôle applicatif) et `0013` (révocation des rôles `anon`/`authenticated`) ajoutées ; `npm run db:status` contrôle version, RLS forcée, bascule de rôle | Schéma appliqué (14 migrations le 5 nov., 23 depuis). **Dérive constatée le 7 nov.** : 5 migrations appliquées hors Git et privilèges `0013` annulés. **Corrections `0015`→`0023` rejouées sur la base** le 7 nov. à 22:5x UTC et vérifiées (133 politiques, 0 politique lisible sans restriction, 1 seul privilège `authenticated` toléré, RLS forcée sur 49/49, journal à 23 entrées) ([`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Comptes réels (hors démo) | ✅ Opérationnel | Inscription `/inscription` → onboarding → espace réel (`is_demo = false`, aucun bandeau), ou `npm run admin:create` (compte + organisation + rôle propriétaire, mot de passe généré) ; parcours vérifié en HTTP (303 → `/app`, pages 200) et par test d'intégration | — |
-| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours), **connexion Google OAuth/OIDC** (PKCE, vérification du jeton, liaison de compte, MFA conservée), **code de connexion à usage unique envoyé par e-mail (OTP) à CHAQUE connexion** — en plus du mot de passe (et après la 2FA le cas échéant) ; défi 10 min, 5 essais, empreinte scrypt, `AUTH_LOGIN_OTP=false` pour désactiver | 2FA facultative ; transport SMTP non implémenté ; identifiants Google réels à configurer ; **sans transport d'e-mail réel (Resend), le code OTP empêche toute connexion : `env:check` bloque le déploiement** |
+| Authentification | ✅ Opérationnel | Inscription, connexion, déconnexion, sessions en base, révocation, gestion des sessions actives, mot de passe oublié/réinitialisation, vérification e-mail (jeton), limitation de débit, **double authentification TOTP** (chiffrement AES-256-GCM, codes de secours), **connexion Google OAuth/OIDC** (PKCE, vérification du jeton, liaison de compte, MFA conservée), **code de connexion à usage unique envoyé par e-mail (OTP) à chaque connexion par mot de passe** — en plus du mot de passe (et après la 2FA le cas échéant) ; défi 10 min, 5 essais, empreinte scrypt, `AUTH_LOGIN_OTP=false` pour désactiver. **Connexion Google « en un clic »** : aucune session avant le TOTP si la 2FA est active, sinon session directe (le code e-mail n'est plus exigé après Google depuis le 11 nov. 2026, `AUTH_LOGIN_OTP_GOOGLE=true` pour le rétablir) | 2FA facultative ; transport SMTP non implémenté ; identifiants Google réels à configurer ; **sans transport d'e-mail réel (Resend), le code OTP empêche toute connexion : `env:check` bloque le déploiement** |
 | Organisations & onboarding | ✅ Opérationnel | Création d'organisation (rôles, pipeline, catégories, modules), identité, devise, fuseau, départements | Suppression d'organisation, logo (colonne présente, upload non exposé) |
 | Collaborateurs & invitations | ✅ Opérationnel | Invitation avec jeton, acceptation, rôles multiples, suspension, protection du propriétaire | Renvoi d'invitation en un clic |
 | Rôles & permissions | ✅ Opérationnel | Matrice 16×7 éditable, verrouillage du rôle propriétaire, audit | Duplication de rôle |
@@ -98,7 +100,7 @@ jeton obtenu via le flux OTP réel
 | `tests/integration/auth.test.ts` | Hachage scrypt, cycle de session, **liste et révocation de sessions (y compris refus de révoquer celle d'un autre utilisateur)**, réinitialisation, vérification e-mail |
 | `tests/integration/login-otp.test.ts` | **Code de connexion OTP** : actif par défaut, désactivable ; aucune session après le mot de passe seul ; ouverture après le code (jeton validable) ; empreinte scrypt en base (jamais le code en clair) ; 5 essais max puis défi invalidé ; défi à usage unique ; chaîne mot de passe → TOTP → OTP ; `AUTH_LOGIN_OTP=false` restaure la connexion en une étape |
 | `tests/unit/google.test.ts` | Vecteur PKCE RFC 7636, URL d'autorisation, jetons OIDC signés RSA : signature, émetteur, audience, expiration, nonce et e-mail vérifié |
-| `tests/integration/google-auth.test.ts` | Création sans mot de passe, liaison par e-mail puis par `sub`, compte inactif, inscriptions fermées, MFA après Google |
+| `tests/integration/google-auth.test.ts` | Création sans mot de passe, liaison par e-mail puis par `sub`, compte inactif, inscriptions fermées, MFA après Google, **session en un clic après Google (code e-mail non exigé par défaut)**, **`AUTH_LOGIN_OTP_GOOGLE=true` rétablit le code**, **chaîne Google + 2FA (session directe / TOTP puis code e-mail selon `AUTH_LOGIN_OTP_GOOGLE`)** |
 | `tests/integration/workflows.test.ts` | Projets/jalons, tâches et commentaires, conversion prospect → client, invitation → acceptation → rôles, protection du propriétaire, drapeau `is_demo` |
 | `tests/integration/finance.test.ts` | Numérotation, totaux HT/TVA/TTC, encaissement partiel → payé, refus de dépassement, facture payée verrouillée, transition invalide, devis → facture (une seule fois), dépenses (auto-validation interdite, suppression bloquée) |
 | `tests/integration/hr.test.ts` | Employés (CRUD, archivage, date de fin invalide), contrats, congés (chevauchement, approbation → statut employé, nouvelle décision refusée), pointage unique par jour, statut invalide |
@@ -198,7 +200,9 @@ télécharger dans cet environnement.
 12. **Sauvegarde/restauration du stockage objet** non traitée (dépend du fournisseur).
 13. **Connexion Google réelle non exécutée** : le flux OAuth et les contrôles de sécurité sont testés,
     mais les identifiants présents dans l'environnement local sont des exemples. Il faut renseigner
-    les vrais `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, puis tester avec un compte Google.
+    les vrais `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`, puis tester avec un compte Google. (Par
+    choix produit du 11 nov. 2026, la connexion Google ouvre la session en un clic, sans code
+    e-mail ; `AUTH_LOGIN_OTP_GOOGLE=true` la soumet aussi au code e-mail.)
 
 ---
 
@@ -215,7 +219,10 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 
 1. **Finaliser la connexion Google** : créer les identifiants OAuth dans Google Cloud, déclarer
    `<APP_URL>/api/auth/google/callback`, renseigner les secrets dans l'environnement et tester une
-   connexion réelle (guide : `docs/configuration.md`).
+   connexion réelle (guide : `docs/configuration.md`). La connexion est « en un clic » (sessions
+   directes, la 2FA TOTP éventuelle reste demandée) ; `AUTH_LOGIN_OTP_GOOGLE=true` rétablit le
+   code e-mail après Google. Le bouton « Continuer avec Google » est affiché en tête de la page
+   de connexion.
 2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 25 migrations
    (dont `0025_login_challenges`), tester une restauration, exécuter le workflow CI sur GitHub et
    déployer sur Netlify.

@@ -32,7 +32,7 @@ export function GoogleSignInButton() {
   return (
     <Link
       href="/api/auth/google"
-      className="flex h-10 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card text-sm font-medium shadow-sm transition-colors hover:bg-muted"
+      className="flex h-11 w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-card text-sm font-semibold shadow-md transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <GoogleLogo />
       Continuer avec Google

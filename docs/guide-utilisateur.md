@@ -105,12 +105,15 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
 
 ## Connexion
 
-À chaque connexion, après votre mot de passe (et après le code de votre application
-  d'authentification si la double authentification est activée), un **code à 6 chiffres** vous est
-  envoyé par e-mail à l'adresse de votre compte. Saisissez-le sur la page de connexion : il expire
-  dans 10 minutes et n'est utilisable qu'une fois. En développement, aucun e-mail n'est envoyé :
-  le code s'affiche à l'écran. Si vous n'avez pas reçu le code, vérifiez vos courriers indésirables,
-  puis réessayez depuis « Recommencer la connexion ».
+À chaque connexion par mot de passe, après votre mot de passe (et après le code de votre
+  application d'authentification si la double authentification est activée), un **code à 6 chiffres**
+  vous est envoyé par e-mail à l'adresse de votre compte. Saisissez-le sur la page de connexion :
+  il expire dans 10 minutes et n'est utilisable qu'une fois. En développement, aucun e-mail n'est
+  envoyé : le code s'affiche à l'écran. Si vous n'avez pas reçu le code, vérifiez vos courriers
+  indésirables, puis réessayez depuis « Recommencer la connexion ».
+  **Avec « Continuer avec Google »**, cette étape n'est pas nécessaire : Google vérifie déjà votre
+  adresse et la session s'ouvre directement (la double authentification reste demandée si elle est
+  activée).
 
 ## Paramètres
 
@@ -126,7 +129,8 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
   compatible TOTP). Le secret s'ajoute manuellement (ou via le lien `otpauth://`) ; un premier code
   valide confirme l'activation et affiche **10 codes de secours** à conserver hors ligne. Ensuite,
   chaque connexion demande le mot de passe **puis** un code à 6 chiffres (ou un code de secours,
-  utilisable une seule fois). La désactivation exige le mot de passe actuel et déconnecte les autres
+  utilisable une seule fois). Avec une connexion Google, la double authentification reste demandée
+  (le code à 6 chiffres par e-mail, non). La désactivation exige le mot de passe actuel et déconnecte les autres
   sessions. Si l'écran indique que la fonctionnalité est indisponible, l'administrateur doit définir
   `MFA_ENCRYPTION_KEY` (voir `docs/configuration.md`).
 

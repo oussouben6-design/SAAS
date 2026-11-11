@@ -81,7 +81,8 @@ AUTO_MIGRATE=false                      # lancer db:migrate dans le pipeline de 
 APP_URL=https://excellence360.example.com
 AUTH_ALLOW_REGISTRATION=false           # invitation uniquement (recommandé)
 AUTH_REQUIRE_EMAIL_VERIFICATION=false   # true seulement si un transport d'e-mail est opérationnel
-AUTH_LOGIN_OTP=true                     # code à 6 chiffres envoyé par e-mail à chaque connexion (défaut ; exige MAIL_TRANSPORT=resend)
+AUTH_LOGIN_OTP=true                     # code à 6 chiffres par e-mail à chaque connexion par mot de passe (défaut ; exige MAIL_TRANSPORT=resend)
+AUTH_LOGIN_OTP_GOOGLE=false               # false (défaut) = connexion Google en un clic ; true = code e-mail exigé après Google aussi
 MFA_ENCRYPTION_KEY=                      # openssl rand -base64 32 (recommandé)
 GOOGLE_CLIENT_ID=                        # optionnel : OAuth Google, à définir avec le secret
 GOOGLE_CLIENT_SECRET=                    # redirection : <APP_URL>/api/auth/google/callback

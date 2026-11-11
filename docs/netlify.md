@@ -94,7 +94,8 @@ elle est absente. Il reste donc au minimum trois variables à configurer : `DATA
 | `RESEND_API_KEY` / `MAIL_FROM` | clé Resend + expéditeur vérifié | Gratuit (3 000 e-mails/mois) |
 | `AUTH_ALLOW_REGISTRATION` | `true` (public) ou `false` (sur invitation) | |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true` seulement si Resend est configuré | Sinon les comptes resteraient bloqués |
-| `AUTH_LOGIN_OTP` | `true` (défaut) une fois Resend configuré | `false` uniquement en dernier recours : sinon personne ne peut se connecter sans le code envoyé par e-mail |
+| `AUTH_LOGIN_OTP` | `true` (défaut) une fois Resend configuré | `false` uniquement en dernier recours : sinon personne ne peut se connecter sans le code envoyé par e-mail. Ne s'applique pas à Google (voir `AUTH_LOGIN_OTP_GOOGLE`) |
+| `AUTH_LOGIN_OTP_GOOGLE` | `false` (défaut) | `true` pour exiger aussi le code e-mail après une connexion Google ; `false` = connexion Google « en un clic » |
 
 Pour la connexion Google, déclarez aussi dans Google Cloud l'URI de redirection exacte
 `<APP_URL>/api/auth/google/callback` (avec le domaine Netlify ou le domaine personnalisé), puis
