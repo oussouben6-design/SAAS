@@ -1,5 +1,5 @@
 -- =====================================================================
--- 0024 — Code de vérification par e-mail à chaque connexion (OTP)
+-- 0025 — Code de vérification par e-mail à chaque connexion (OTP)
 --
 -- Après vérification des identifiants (et de la 2FA le cas échéant), aucune
 -- session n'est créée tant que le code à 6 chiffres envoyé par e-mail à
