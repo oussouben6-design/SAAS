@@ -114,9 +114,10 @@ Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu
   **Avec « Continuer avec Google »**, cette étape n'est pas nécessaire : Google vérifie déjà votre
   adresse et la session s'ouvre directement (la double authentification reste demandée si elle est
   activée).
-  **« Explorer la démo — sans compte »** : ouvre instantanément une session sur une organisation
-  **fictive** (aucune donnée réelle, aucune inscription). Idéal pour découvrir l'interface ; les
-  données sont partagées entre les visiteurs et peuvent être supprimées à tout moment.
+
+> **Usage personnel sans aucun compte ?** Le mode personnel (`PERSONAL_MODE=true`)
+> affiche directement votre espace en ouvrant le site, sans inscription ni mot de passe.
+> Voir `docs/mode-personnel.md` — réservé à un usage privé, pas à un domaine public.
 
 ## Paramètres
 

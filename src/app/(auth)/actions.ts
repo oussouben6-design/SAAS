@@ -8,7 +8,6 @@ import {
   completeLoginOtp,
   completeMfaLogin,
   createUserAccount,
-  enterDemoMode,
   loginOtpEnabled,
   requestPasswordReset,
   resetPasswordWithToken,
@@ -34,6 +33,7 @@ import { fieldErrors } from "@/lib/validation/common";
 import { ZodError } from "zod";
 import { listMemberships } from "@/lib/server/context";
 import { AppError } from "@/lib/server/errors";
+import { isPersonalMode } from "@/lib/personal";
 
 async function requestMeta() {
   const headerList = await headers();
@@ -223,6 +223,7 @@ export async function registerAction(
 }
 
 export async function logoutAction(): Promise<void> {
+  if (isPersonalMode()) redirect("/app"); // rien à fermer : accès personnel sans compte
   const token = await readSessionToken();
   if (token) await revokeSession(token);
   await clearSessionCookie();
@@ -273,20 +274,3 @@ export async function resetPasswordAction(
   });
 }
 
-/**
- * Mode démo public : ouvre une session sur l'organisation de démonstration, sans compte.
- * Limitée en abus par adresse IP ; l'organisation et les données sont fictives.
- */
-export async function demoLoginAction(): Promise<void> {
-  const { ip, userAgent } = await requestMeta();
-  const limit = rateLimit(`demo:${ip ?? "local"}`, 20, 15 * 60);
-  if (!limit.allowed) redirect("/connexion?erreur=trop_de_tentatives");
-
-  const result = await enterDemoMode({ ip, userAgent });
-  if (!result.ok) {
-    console.error(`[excellence360:demo] ouverture impossible — ${result.code}`);
-    redirect("/connexion?erreur=demo_indisponible");
-  }
-  await writeSessionCookie(result.data.token, result.data.expiresAt);
-  redirect("/app");
-}

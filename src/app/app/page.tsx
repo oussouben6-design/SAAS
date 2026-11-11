@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -13,8 +14,9 @@ import {
   Wallet,
 } from "lucide-react";
 import { requireContext, can } from "@/lib/server/context";
+import { LOGO_EMBLEM } from "@/lib/brand";
 import { getDashboard, PERIOD_LABELS, type DashboardPeriod } from "@/modules/dashboard/service";
-import { PageHeader, StatCard, EmptyState } from "@/components/ui/misc";
+import { StatCard, EmptyState } from "@/components/ui/misc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FinanceChart, TaskStatusChart } from "@/modules/dashboard/components/charts";
@@ -49,26 +51,61 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={`Bonjour ${context.user.fullName.split(" ")[0]}`}
-        description={`Vue consolidée de ${context.organization!.name} · ${PERIOD_LABELS[period]}`}
-        badge={<Badge variant="primary">{context.member?.roleKeys[0] === "owner" ? "Administrateur principal" : "Espace de travail"}</Badge>}
-        actions={
-          <div className="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
+      {/* En-tête aux couleurs du logo Excellence 360 : marine, or, bleu ciel, sur dégradé marine→bleu. */}
+      <section
+        className="relative overflow-hidden rounded-2xl text-white shadow-md"
+        style={{ background: "linear-gradient(135deg,#00285e 0%,#00306b 52%,#0057a8 100%)" }}
+      >
+        <div aria-hidden className="pointer-events-none absolute -right-12 -top-16 size-64 rounded-full bg-[#ffc000]/15 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-20 right-28 size-56 rounded-full bg-[#75c8fe]/20 blur-2xl" />
+        <div className="relative flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-center gap-4">
+            <Image
+              src={LOGO_EMBLEM}
+              alt="Emblème Excellence Services"
+              width={72}
+              height={72}
+              priority
+              className="hidden size-[72px] shrink-0 rounded-full bg-white/95 p-1 shadow-lg sm:block"
+            />
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#ffc000]">
+                Excellence 360 CRM
+              </p>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                Bonjour {context.user.fullName.split(" ")[0]}
+              </h1>
+              <p className="max-w-xl text-sm text-[#bfd8ee]">
+                Vue consolidée de <span className="font-medium text-white">{context.organization!.name}</span>
+                {" "}· {PERIOD_LABELS[period]}
+              </p>
+              <Badge className="border-transparent bg-[#ffc000] text-[#00285e]">
+                {context.member?.roleKeys[0] === "owner" ? "Administrateur principal" : "Espace de travail"}
+              </Badge>
+            </div>
+          </div>
+          <div
+            className="flex flex-wrap gap-1 self-start rounded-xl border border-white/15 bg-white/10 p-1 backdrop-blur sm:self-auto"
+            aria-label="Période d'analyse"
+          >
             {PERIODS.map((option) => (
               <Link
                 key={option}
                 href={`/app?period=${option}`}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                  option === period ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                aria-current={option === period ? "true" : undefined}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                  option === period
+                    ? "bg-[#ffc000] font-semibold text-[#00285e] shadow-sm"
+                    : "text-[#cfe3f8] hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {option === "all" ? "Tout" : option === "12m" ? "12 mois" : option.replace("d", " j")}
               </Link>
             ))}
           </div>
-        }
-      />
+        </div>
+        <div aria-hidden className="h-1.5 w-full bg-gradient-to-r from-[#ffc000] via-[#ef9701] to-[#75c8fe]" />
+      </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -76,6 +113,7 @@ export default async function DashboardPage({
           value={data.projects.total}
           hint={`${data.projects.active} en cours · ${data.projects.completed} terminés`}
           icon={<FolderKanban />}
+          iconClassName="rounded-lg bg-[#00285e] p-2 text-[#ffc000] [&_svg]:size-4"
         />
         <StatCard
           label="Tâches en retard"
@@ -83,18 +121,21 @@ export default async function DashboardPage({
           tone={data.tasks.overdue > 0 ? "danger" : "success"}
           hint={`${data.tasks.done} terminées sur ${data.tasks.total}`}
           icon={<AlertTriangle />}
+          iconClassName="rounded-lg bg-[#ffc000] p-2 text-[#00285e] [&_svg]:size-4"
         />
         <StatCard
           label="Clients"
           value={data.customers.total}
           hint={`${data.customers.newInPeriod} nouveaux sur la période`}
           icon={<Users />}
+          iconClassName="rounded-lg bg-[#0057a8] p-2 text-white [&_svg]:size-4"
         />
         <StatCard
           label="Prospects"
           value={data.leads.total}
           hint={`${data.leads.newInPeriod} nouveaux sur la période`}
           icon={<Target />}
+          iconClassName="rounded-lg bg-[#75c8fe] p-2 text-[#00285e] [&_svg]:size-4"
         />
       </div>
 
@@ -106,6 +147,7 @@ export default async function DashboardPage({
             hint={PERIOD_LABELS[period]}
             tone="success"
             icon={<Wallet />}
+            iconClassName="rounded-lg bg-[#ffc000] p-2 text-[#00285e] [&_svg]:size-4"
           />
           <StatCard
             label="Dépenses enregistrées"
@@ -113,6 +155,7 @@ export default async function DashboardPage({
             hint={PERIOD_LABELS[period]}
             tone="warning"
             icon={<Receipt />}
+            iconClassName="rounded-lg bg-[#00285e] p-2 text-[#75c8fe] [&_svg]:size-4"
           />
           <StatCard
             label="Factures impayées"
@@ -120,12 +163,14 @@ export default async function DashboardPage({
             hint={`${data.finance.unpaidCount} facture(s) en attente`}
             tone={data.finance.unpaidCount > 0 ? "danger" : "default"}
             icon={<Receipt />}
+            iconClassName="rounded-lg bg-[#ef9701] p-2 text-[#00285e] [&_svg]:size-4"
           />
           <StatCard
             label="Opportunités ouvertes"
             value={formatMoney(data.opportunities.amountMinor, currency)}
             hint={`${data.opportunities.open} opportunité(s) · ${data.opportunities.wonInPeriod} gagnée(s)`}
             icon={<Target />}
+            iconClassName="rounded-lg bg-[#008bdf] p-2 text-white [&_svg]:size-4"
           />
         </div>
       ) : null}
@@ -222,7 +267,7 @@ export default async function DashboardPage({
                   <span className="w-40 truncate text-sm">{member.name}</span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full bg-primary"
+                      className="h-full rounded-full bg-gradient-to-r from-[#0057a8] to-[#008bdf]"
                       style={{
                         width: `${Math.min(100, (member.open / Math.max(...data.workload.map((entry) => entry.open))) * 100)}%`,
                       }}

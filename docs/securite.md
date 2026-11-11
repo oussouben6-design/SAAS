@@ -80,19 +80,18 @@
   `tests/integration/google-auth.test.ts` (session directe en un clic après Google,
   `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google → 2FA → session ou code e-mail).
 
-## Authentification : mode démo public
+## Authentification : mode personnel (PERSONAL_MODE)
 
-- **« Explorer la démo — sans compte »** (bouton public sur `/connexion`) : aucune identité
-  n'est requise ; une session est ouverte sur une organisation **fictive** isolée (`is_demo`,
-  bandeau permanent « Espace de démonstration »). Le profil mutualisé `demo.visiteur@organix.local`
-  ne possède **aucun identifiant de connexion** et n'appartient à aucune organisation réelle ;
-  la RLS l'empêche d'atteindre toute donnée hors de la démo.
-- L'organisation de démo est **réutilisée si elle existe** (jeux de données seed), sinon elle est
-  créée à la première ouverture avec trois clients fictifs ; l'accès est limité à **20 ouvertures
-  par adresse IP et par 15 minutes** (limitation de débit). Les données y sont **partagées entre
-  visiteurs** — c'est une démo, pas un espace de travail.
-- Couverture : `tests/integration/demo-mode.test.ts` (session valide sans compte, organisation
-  `is_demo` unique et idempotente, aucun identifiant, aucun accès aux organisations réelles).
+- **Option explicite** (`PERSONAL_MODE=true` au build) : chaque requête est traitée comme le
+  propriétaire réel du déploiement — aucun cookie, mot de passe ou identité requis. Le compte
+  personnel (`personnel@organix.local` par défaut) est provisionné sans identifiant ; l'organisation
+  est réelle (`is_demo=false`), vide, et le propriétaire y a toutes les permissions.
+- Sans cette variable, aucun changement : l'authentification normale (mot de passe + code OTP,
+  Google « en un clic », 2FA) continue de protéger tout le site.
+- **Le mode personnel ne doit jamais être actif sur un domaine public** : toute personne connaissant
+  l'adresse obtient un accès complet. Protection d'accès amont recommandée (Vercel Deployment
+  Protection), et désactivation dès que le site est destiné à plusieurs utilisateurs.
+- Couverture : `tests/integration/personal-mode.test.ts`.
 
 ## Autorisation
 
