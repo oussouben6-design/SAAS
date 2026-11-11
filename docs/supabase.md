@@ -54,7 +54,7 @@ AUTO_MIGRATE=false           # les migrations se lancent explicitement
 
 ```bash
 npm run db:migrate     # applique 0001 → 0014 (idempotent)
-npm run db:status      # doit afficher 23/23 migrations et « Bascule de rôle applicatif : OK »
+npm run db:status      # doit afficher 24/24 migrations et « Bascule de rôle applicatif : OK »
 ```
 
 La migration **0012** est indispensable sur Supabase : PostgreSQL 16 a dissocié les options
@@ -102,6 +102,9 @@ MAX_UPLOAD_BYTES=10485760
   Auth, il n'est pas utilisé.
 - Pour la vérification d'adresse en production, configurez un transport réel (`MAIL_TRANSPORT=resend`
   + `RESEND_API_KEY`), puis `AUTH_REQUIRE_EMAIL_VERIFICATION=true`.
+- Code de connexion (OTP) : `AUTH_LOGIN_OTP` est **actif par défaut** — chaque connexion exige le
+  code à 6 chiffres envoyé par e-mail. Avec `MAIL_TRANSPORT=console`, aucun code ne part :
+  configurez Resend avant la mise en production, ou définissez `AUTH_LOGIN_OTP=false` en attendant.
 - Double authentification : définissez `MFA_ENCRYPTION_KEY` (`openssl rand -base64 32`) et conservez
   la clé hors du dépôt ; sans elle, l'activation de la 2FA est refusée.
 
@@ -132,14 +135,14 @@ pg_dump "$DATABASE_URL" --no-owner --no-privileges -Fc -f /var/backups/excellenc
 
 - Copiez l'archive **hors de Supabase** (stockage objet, autre machine) et chiffrez-la.
 - Testez une restauration par trimestre sur un projet Supabase de test (gratuit) :
-  `pg_restore` puis `npm run db:status` → 23/23 migrations.
+  `pg_restore` puis `npm run db:status` → 24/24 migrations.
 - Les documents du bucket ne sont pas dans le dump : sauvegardez-les via l'API Storage
   (`SUPABASE_SERVICE_ROLE_KEY`) ou `supabase storage cp`.
 
 ## 9. Checklist de mise en service
 
 - [ ] `DATABASE_MODE=postgres`, `DATABASE_URL` = pooler (port 6543), `DATABASE_POOL_MAX` ≤ 5
-- [ ] `npm run db:migrate` → `npm run db:status` : **23/23**, « Bascule de rôle applicatif : OK »
+- [ ] `npm run db:migrate` → `npm run db:status` : **24/24**, « Bascule de rôle applicatif : OK »
 - [ ] `npm run admin:create` (compte réel propriétaire), **aucun** `db:seed` en production
 - [ ] `MFA_ENCRYPTION_KEY`, `APP_URL`, transport e-mail réel configurés
 - [ ] Bucket `documents` privé + `STORAGE_DRIVER=supabase` + test d'upload/téléchargement réel

@@ -5,7 +5,7 @@ import { AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { getSessionUser } from "@/lib/server/context";
 import { isGoogleConfigured } from "@/lib/auth/google";
-import { readMfaChallengeCookie } from "@/lib/auth/cookies";
+import { readLoginOtpCookie, readMfaChallengeCookie } from "@/lib/auth/cookies";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Connexion" };
@@ -34,6 +34,7 @@ export default async function LoginPage({
   const { erreur } = await searchParams;
   const errorMessage = erreur ? GOOGLE_ERROR_MESSAGES[erreur] : undefined;
   const mfaChallenge = await readMfaChallengeCookie();
+  const otpChallenge = await readLoginOtpCookie();
 
   return (
     <AuthShell
@@ -60,6 +61,7 @@ export default async function LoginPage({
         <LoginForm
           googleEnabled={isGoogleConfigured()}
           initialChallenge={mfaChallenge ?? undefined}
+          initialOtpChallenge={otpChallenge ?? undefined}
         />
       </div>
     </AuthShell>

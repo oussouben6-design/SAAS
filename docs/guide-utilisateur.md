@@ -103,6 +103,15 @@ supprimée.
 Liste des notifications qui vous sont destinées (échéances, affectations) avec lien vers l'objet.
 Le compteur de l'en-tête reflète les éléments non lus ; le marquage comme lu est persistant.
 
+## Connexion
+
+À chaque connexion, après votre mot de passe (et après le code de votre application
+  d'authentification si la double authentification est activée), un **code à 6 chiffres** vous est
+  envoyé par e-mail à l'adresse de votre compte. Saisissez-le sur la page de connexion : il expire
+  dans 10 minutes et n'est utilisable qu'une fois. En développement, aucun e-mail n'est envoyé :
+  le code s'affiche à l'écran. Si vous n'avez pas reçu le code, vérifiez vos courriers indésirables,
+  puis réessayez depuis « Recommencer la connexion ».
+
 ## Paramètres
 
 - **Organisation** : identité, devise, fuseau, langue, départements, **liste de vos organisations

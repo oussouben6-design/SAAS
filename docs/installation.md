@@ -139,7 +139,7 @@ npm run typecheck     # aucune erreur TypeScript
 npm run lint          # aucune erreur ESLint
 npm test              # tests unitaires + intégration (base PGlite temporaire)
 npm run build         # build de production
-npm run db:status     # 7/7 migrations, volumétrie
+npm run db:status     # 24/24 migrations, volumétrie
 ```
 
 Puis, dans le navigateur : `/` (page publique), `/inscription`, `/connexion`, `/app` (tableau de
@@ -155,6 +155,7 @@ bord), `/app/parametres/equipe`, `/app/parametres/roles`.
 | `Cannot find module '@electric-sql/pglite'` | `npm install` incomplet | `rm -rf node_modules && npm install` |
 | Le serveur démarre mais `/app` redirige vers `/connexion` | Session absente ou expirée | Se reconnecter ; vérifier l'horloge système |
 | E-mail de vérification non reçu | `MAIL_TRANSPORT=console` | Le lien est affiché dans la console du serveur |
+| La page de connexion demande un code à 6 chiffres | `AUTH_LOGIN_OTP` actif (défaut) | En développement, le code s'affiche à l'écran ; en production, configurez Resend (voir `docs/configuration.md`) |
 | `npm run db:reset` refuse | Base distante détectée | Procédure manuelle (voir ci-dessus) |
 | Un script de maintenance échoue pendant que `npm run dev` tourne | PGlite n'accepte qu'un seul processus | Arrêter le serveur avant `db:seed`, `db:status`, `db:migrate` |
 

@@ -76,6 +76,19 @@ describe("contrôle de configuration avant déploiement", () => {
     expect(result.errors.join(" ")).toMatch(/NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY/);
   });
 
+  it("refuse le code de connexion (défaut) sans transport réel, sauf désactivation explicite", () => {
+    const on = checkEnvironment({ ...serverlessBase, MAIL_TRANSPORT: "console" });
+    expect(on.errors.join(" ")).toMatch(/AUTH_LOGIN_OTP/);
+    expect(on.notes.join(" ")).toMatch(/AUTH_LOGIN_OTP/);
+
+    const off = checkEnvironment({
+      ...serverlessBase,
+      MAIL_TRANSPORT: "console",
+      AUTH_LOGIN_OTP: "false",
+    });
+    expect(off.errors.join(" ")).not.toMatch(/AUTH_LOGIN_OTP/);
+  });
+
   it("refuse la vérification d'e-mail sans transport réel", () => {
     const result = checkEnvironment({
       ...serverlessBase,

@@ -137,8 +137,11 @@ rôles Supabase sur les trois RPC, et supprimer `notifications` de la publicatio
 
 ## 7. Ce que l'audit a produit de vérifiable
 
+État au 11 novembre 2026 (migration `0024_login_challenges` ajoutée pour le code de connexion
+OTP, **à appliquer en production** au prochain déploiement) :
+
 ```
-PGlite neuve, 23 migrations                 → 49 tables · 133 politiques · 31 déclencheurs · 13 fonctions · 557 colonnes
+PGlite neuve, 24 migrations                 → 50 tables · 134 politiques · 31 déclencheurs · 13 fonctions · 567 colonnes
 npm run db:audit (après --update du verrou) → « Schéma conforme au dépôt : aucune dérive détectée. »
 npm test                                    → 141/141 tests en 20 fichiers (dont 6 sur le
 #                                             contexte JWT et 5 sur les remèdes du
