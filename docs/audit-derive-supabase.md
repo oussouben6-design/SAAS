@@ -134,6 +134,8 @@ rôles Supabase sur les trois RPC, et supprimer `notifications` de la publicatio
 | `0013` annulée + 5 migrations hors Git | constat 7 nov. 20:36→21:17 | inventaire § 2 |
 | `0020`, `0021` appliquées en base ; journal porté à 21 | 7 nov. 22:41 UTC | 133 politiques ; 0 politique `'*'`/`'r'` sans `USING` ; **0 privilège `anon`/`authenticated` sur les tables de `public`** |
 | `0022`, `0023` appliquées | 7 nov. 22:52 UTC | `md5(pg_get_functiondef('app.current_user_id')) = a83e284a67f9548c274f891c80fe4d37`, **identique** à la base de référence PGlite ; 0 privilège `anon` ; 1 seul privilège `authenticated` (SELECT sur `notifications`) ; RLS forcée sur 49/49 ; journal à 23 entrées |
+| Dérive du 10 nov. constatée (11 nov.) : `0024_supabase_email_verification_sync` (13:58) + `0024_supabase_auth_profile_trigger_conflict` (15:11) appliquées hors Git — pont `auth.users` → `profiles` | constat 11 nov. | `handle_new_user` `on conflict do nothing`, `sync_auth_email_confirmation` SECURITY DEFINER avec EXECUTE accordé à `anon`/`authenticated` (reste du drift) |
+| Dérive du 10 nov. **récupérée** en dépôt : `0024_supabase_email_verification_sync.sql` (définitions fidèles via `pg_get_functiondef`/`pg_get_triggerdef`, `EXECUTE` du déclencheur de synchro refermé à `service_role`), OTP renumérotée `0025` | 11 nov. | `npm run db:audit` conforme (25 migrations, PGlite neuve) ; **appliquées en production le 11 nov. via connecteur** : journal `app.migrations` à 25, 50 tables, 134 politiques ; `login_challenges` RLS + forcée ; ACL `login_challenges` = `{postgres, service_role, organix_app}` (0 `anon`/`authenticated`) ; ACL `sync_auth_email_confirmation` = `{postgres, service_role}` |
 
 ## 7. Ce que l'audit a produit de vérifiable
 
