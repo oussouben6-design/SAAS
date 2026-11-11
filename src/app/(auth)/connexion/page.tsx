@@ -21,6 +21,7 @@ const GOOGLE_ERROR_MESSAGES: Record<string, string> = {
   inscriptions_fermees:
     "La création de compte est désactivée. Demandez une invitation à votre administrateur.",
   trop_de_tentatives: "Trop de tentatives. Réessayez dans quelques minutes.",
+  demo_indisponible: "Le mode démo est indisponible pour le moment. Réessayez dans quelques minutes.",
 };
 
 export default async function LoginPage({
