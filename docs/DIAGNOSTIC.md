@@ -181,7 +181,7 @@ avec leurs politiques. Il manque l'interface, pas la structure.
 | --- | --- | --- |
 | **Supabase** (Free) | PostgreSQL managé + sauvegardes (limitées) | Oui, pour la production |
 | **PGlite** (open source, local) | Base de développement et de test | Oui, déjà en place — aucun compte |
-| **Vercel / Render / VPS** | Hébergement Node | Oui pour publier (offre gratuite possible avec limites) |
+| **Vercel / Render / VPS** | Hébergement Next.js (serverless ou Node) | Oui pour publier (plan Hobby gratuit avec limites ; voir `docs/vercel.md`) |
 | **GitHub** | Dépôt, CI, revue | Oui (déjà utilisé) |
 | **Resend / Brevo** (free) | E-mails transactionnels | Oui pour des invitations autonomes (non branché) |
 | **Supabase Storage / S3** | Stockage objet | À prévoir si hébergement sans disque persistant |

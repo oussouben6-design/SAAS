@@ -1,5 +1,9 @@
 # Déploiement sur Netlify
 
+> **Vous hébergez sur Vercel ?** Le guide équivalent est [`docs/vercel.md`](vercel.md) (le dépôt
+> dispose d'un préflight Vercel dédié dans la CI et de la résolution automatique de l'URL publique
+> Vercel dans `env:check`). Ce document reste valable pour Netlify.
+
 Excellence 360 CRM est une application **Next.js 15** (App Router, Server Actions, route handlers) : elle
 fonctionne sur Netlify via le runtime officiel `@netlify/plugin-nextjs`, détecté automatiquement.
 

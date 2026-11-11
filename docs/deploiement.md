@@ -60,6 +60,9 @@ Gestion du processus : `systemd` ou `pm2` avec redémarrage automatique. Gardez 
 
 ## Option B — Vercel + Supabase
 
+Guide complet : [`docs/vercel.md`](vercel.md) (import, variables, `MAX_UPLOAD_BYTES=4194304`,
+URI de redirection Google, cron de maintenance via GitHub Actions).
+
 La base fonctionne (Supabase PostgreSQL). Le système de fichiers Vercel étant éphémère, configurez
 `STORAGE_DRIVER=supabase` (implémenté via l'API REST, bucket **privé**) :
 

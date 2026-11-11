@@ -140,12 +140,17 @@ export function checkEnvironment(
       `MAX_UPLOAD_BYTES=${Math.round(maxUpload / 1024 / 1024)} Mo dépasse la limite de corps de requête des ` +
         "fonctions Netlify (~6 Mo) : les téléversements plus gros échoueront. Réglez MAX_UPLOAD_BYTES=5242880.",
     );
+  } else if (platform === "vercel" && maxUpload > 4.5 * 1024 * 1024) {
+    warnings.push(
+      `MAX_UPLOAD_BYTES=${Math.round(maxUpload / 1024 / 1024)} Mo dépasse la limite de corps de requête des ` +
+        "fonctions Vercel (~4,5 Mo) : les téléversements plus gros échoueront. Réglez MAX_UPLOAD_BYTES=4194304 (4 Mo).",
+    );
   }
 
   // ---------------------------------------------------------------- application
   const appUrl = appUrlFromEnvironment(env) ?? "";
-  if (!env.APP_URL && !env.NEXT_PUBLIC_APP_URL && appUrl && platform === "netlify") {
-    notes.push(`APP_URL non définie : URL Netlify utilisée (${appUrl}).`);
+  if (!env.APP_URL && !env.NEXT_PUBLIC_APP_URL && appUrl && (platform === "netlify" || platform === "vercel")) {
+    notes.push(`APP_URL non définie : URL ${platform === "vercel" ? "Vercel" : "Netlify"} utilisée (${appUrl}).`);
   }
   if (!appUrl) {
     errors.push("APP_URL est requise (liens d'e-mail et redirections).");

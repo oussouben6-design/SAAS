@@ -1,8 +1,8 @@
 # Maintenance planifiée d'ORGANIX (gratuit sur GitHub Actions).
 #
 # À configurer dans le dépôt : Settings → Secrets and variables → Actions
-#   APP_URL             https://votre-site.netlify.app
-#   MAINTENANCE_SECRET  même valeur que la variable d'environnement Netlify
+#   APP_URL             https://votre-site.exemple.com (Vercel ou Netlify)
+#   MAINTENANCE_SECRET  même valeur que la variable d'environnement de l'hébergeur
 #
 # - toutes les 6 heures : appel de /api/health (supervision + keep-alive Supabase)
 # - chaque nuit        : purge des sessions expirées via /api/maintenance

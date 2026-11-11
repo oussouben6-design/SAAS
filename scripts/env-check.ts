@@ -3,7 +3,7 @@ import { detectPlatform, type Platform } from "../src/lib/config/platform";
 
 /**
  * Contrôle de configuration avant déploiement (`npm run env:check`).
- * À exécuter en CI, dans Netlify (build) ou sur le serveur avant démarrage.
+ * À exécuter en CI, dans Vercel/Netlify (build) ou sur le serveur avant démarrage.
  * Code de sortie 1 si une erreur bloquante est détectée.
  *
  * Un échec ici est *voulu* : mieux vaut un build refusé qu'un site en ligne sans accès
@@ -32,15 +32,15 @@ const WHERE: Record<Platform, string> = {
 const HOW: Record<string, string> = {
   DATABASE_URL:
     "Supabase → Project Settings → Database → Connection string → « Session pooler », port 6543. " +
-    "Le port 5432 et l'hôte db.<réf>.supabase.co sont en IPv6 : injoignables depuis Netlify.",
+    "Le port 5432 et l'hôte db.<réf>.supabase.co sont en IPv6 : injoignables depuis une plateforme serverless.",
   SUPABASE_URL: "Supabase → Project Settings → API → Project URL (https://<réf>.supabase.co).",
   SUPABASE_SERVICE_ROLE_KEY:
     "Supabase → Project Settings → API → « secret key » (service_role, JWT en eyJ…). La clé anon ne " +
     "suffit pas : le build passerait et les téléversements échoueraient au premier appel. Sans préfixe " +
     "NEXT_PUBLIC_, qui l'exposerait au navigateur.",
   APP_URL:
-    "Facultatif sur Netlify : URL / DEPLOY_PRIME_URL sont utilisées automatiquement. À définir seulement " +
-    "pour un domaine personnalisé.",
+    "Facultatif sur Vercel et Netlify : le domaine de production (Vercel : VERCEL_PROJECT_PRODUCTION_URL, " +
+    "Netlify : URL / DEPLOY_PRIME_URL) est utilisé automatiquement. À définir seulement pour un domaine personnalisé.",
   RESEND_API_KEY: "resend.com → API Keys, avec MAIL_FROM = expéditeur vérifié sur le domaine.",
   MFA_ENCRYPTION_KEY: "Générez-le localement : openssl rand -base64 32.",
   MAINTENANCE_SECRET: "Générez-le localement : openssl rand -hex 32.",

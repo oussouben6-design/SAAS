@@ -26,18 +26,33 @@ export function isServerless(env: PlatformEnvironment = process.env): boolean {
 }
 
 /**
- * URL publique de l'application, sans exiger une variable dupliquée sur Netlify.
+ * URL publique de l'application, sans exiger une variable dupliquée sur l'hébergeur.
  * Netlify fournit URL et DEPLOY_PRIME_URL au build et aux fonctions :
  * - production : le domaine principal (URL), notamment pour les e-mails et OAuth ;
  * - preview/branche : l'URL du déploiement, afin de ne pas mélanger les environnements.
+ * Vercel fournit VERCEL_URL (déploiement courant, sans protocole) et, sur les plans récents,
+ * VERCEL_PROJECT_PRODUCTION_URL (domaine de production) :
+ * - production : le domaine de production, notamment pour les e-mails et OAuth ;
+ * - preview/branche : l'URL du déploiement courant.
  * APP_URL reste prioritaire pour un domaine personnalisé ou un choix explicite.
  */
 export function appUrlFromEnvironment(env: PlatformEnvironment = process.env): string | undefined {
   const explicit = env.APP_URL ?? env.NEXT_PUBLIC_APP_URL;
   if (explicit !== undefined) return explicit;
-  if (detectPlatform(env) !== "netlify") return undefined;
-  if (env.CONTEXT === "production") return env.URL ?? env.DEPLOY_PRIME_URL;
-  return env.DEPLOY_PRIME_URL ?? env.URL;
+  const platform = detectPlatform(env);
+  if (platform === "netlify") {
+    if (env.CONTEXT === "production") return env.URL ?? env.DEPLOY_PRIME_URL;
+    return env.DEPLOY_PRIME_URL ?? env.URL;
+  }
+  if (platform === "vercel") {
+    const raw =
+      env.VERCEL_ENV === "production"
+        ? env.VERCEL_PROJECT_PRODUCTION_URL ?? env.VERCEL_URL
+        : env.VERCEL_URL ?? env.VERCEL_PROJECT_PRODUCTION_URL;
+    if (!raw) return undefined;
+    return raw.startsWith("http") ? raw : `https://${raw}`;
+  }
+  return undefined;
 }
 
 export const SERVERLESS_STORAGE_ERROR =
