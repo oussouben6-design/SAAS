@@ -2,7 +2,13 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { cancelMfaLoginAction, loginAction, loginOtpAction, mfaLoginAction } from "../actions";
+import {
+  cancelMfaLoginAction,
+  demoLoginAction,
+  loginAction,
+  loginOtpAction,
+  mfaLoginAction,
+} from "../actions";
 import { FormFeedback, SubmitButton } from "@/components/forms/form-dialog";
 import { FormField, Input } from "@/components/ui/input";
 import { AuthDivider, GoogleSignInButton } from "@/components/layout/google-signin";
@@ -128,12 +134,17 @@ export function LoginForm({
   return (
     <div className="space-y-4">
       {/* Vérification Google en un clic : mise en avant, avant le formulaire. */}
-      {googleEnabled ? (
-        <>
-          <GoogleSignInButton />
-          <AuthDivider />
-        </>
-      ) : null}
+      {googleEnabled ? <GoogleSignInButton /> : null}
+      {/* Mode démo public : rejoint l'organisation de démonstration, sans compte. */}
+      <form action={demoLoginAction}>
+        <SubmitButton
+          label="Explorer la démo — sans compte"
+          pendingLabel="Ouverture de la démo…"
+          variant="outline"
+          className="h-11 w-full"
+        />
+      </form>
+      <AuthDivider />
       <form action={formAction} className="space-y-4">
         <FormFeedback state={state} />
         <FormField label="Adresse e-mail" htmlFor="email" required>
