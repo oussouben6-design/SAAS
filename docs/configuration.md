@@ -23,7 +23,7 @@ une nouvelle.
 
 | Variable | Défaut | Rôle |
 | --- | --- | --- |
-| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Netlify, `URL`/`DEPLOY_PRIME_URL` sont utilisées si absente |
+| `APP_URL` | `http://localhost:3000` | URL publique des liens d'e-mail et redirections ; sur Vercel, `VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_URL` (production/preview) sont utilisées si absente — sur Netlify, `URL`/`DEPLOY_PRIME_URL` |
 | `AUTH_ALLOW_REGISTRATION` | `true` | `false` = comptes créés uniquement par invitation |
 | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `false` | Exige une adresse vérifiée pour se connecter |
 | `AUTH_LOGIN_OTP` | `true` | Code à 6 chiffres envoyé par e-mail **à chaque connexion par mot de passe**, exigé avant l'ouverture de session ; `false` pour désactiver (dernier recours) |

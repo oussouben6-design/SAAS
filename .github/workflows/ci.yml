@@ -72,6 +72,28 @@ jobs:
           MAIL_FROM: "CI <ci@example.com>"
           MAX_UPLOAD_BYTES: "5242880"
 
+      - name: Préflight Vercel (valeurs factices, aucun secret réel)
+        # Même logique que netlify.toml, côté Vercel : plateforme serverless détectée via
+        # VERCEL=1 / VERCEL_ENV, URL publique résolue via VERCEL_PROJECT_PRODUCTION_URL.
+        # Valeurs factices : la validation est statique, aucune connexion n'est faite.
+        run: env -u APP_URL -u NEXT_PUBLIC_APP_URL npm run env:check
+        env:
+          VERCEL: "1"
+          VERCEL_ENV: "production"
+          VERCEL_PROJECT_PRODUCTION_URL: "excellence360-ci.vercel.app"
+          DATABASE_MODE: "postgres"
+          DATABASE_URL: "postgresql://postgres.ci:ci-only@aws-0-eu-west-3.pooler.supabase.com:6543/postgres"
+          DATABASE_POOL_MAX: "2"
+          AUTO_MIGRATE: "false"
+          STORAGE_DRIVER: "supabase"
+          SUPABASE_URL: "https://ci.supabase.co"
+          SUPABASE_SERVICE_ROLE_KEY: "ci-only-not-a-real-secret"
+          SUPABASE_STORAGE_BUCKET: "documents"
+          MAIL_TRANSPORT: "resend"
+          RESEND_API_KEY: "ci-only-not-a-real-secret"
+          MAIL_FROM: "CI <ci@example.com>"
+          MAX_UPLOAD_BYTES: "4194304"
+
       - name: Tests unitaires et d'intégration
         run: npm run test
 

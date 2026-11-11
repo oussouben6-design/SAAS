@@ -1,9 +1,10 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **11 novembre 2026** (branche `arena/3ed9c6c5-saas` : **vérification Google
-« en un clic »** — le code e-mail n'est plus exigé après une connexion Google
-(`AUTH_LOGIN_OTP_GOOGLE=true` pour le rétablir), bouton « Continuer avec Google » mis en avant en
-tête de formulaire ; 25 migrations, schéma conforme au dépôt et vérifié en base).
+Dernière mise à jour : **11 novembre 2026** (branche `arena/add29556-saas` : **support Vercel** —
+détection de plateforme, résolution automatique de l'URL publique (`VERCEL_PROJECT_PRODUCTION_URL` /
+`VERCEL_URL`), garde-fou serverless identique à Netlify, préflight Vercel dans la CI, guide
+`docs/vercel.md`. S'ajoute à la « vérification Google en un clic » de la branche précédente ;
+25 migrations, schéma conforme au dépôt et vérifié en base).
 
 Ce document décrit l'état **réellement vérifié** du produit. Aucune fonctionnalité n'y est déclarée
 comme opérationnelle sans test automatisé ou vérification HTTP associée. Les éléments non terminés
@@ -22,17 +23,18 @@ sont explicitement listés.
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **152 tests / 152** en 21 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, 5 sur les remèdes du contrôle de configuration, **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et **4 nouveaux sur l'exemption Google** (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
+| `npm test` (Vitest) | ✅ **156 tests / 156** en 21 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, **9 sur les remèdes du contrôle de configuration** (dont **4 nouveaux Vercel** : préflight, URL native production/preview, garde serverless, limite de téléversement), **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et 4 sur l'exemption Google (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
+| Hébergement Vercel | ✅ Support ajouté et vérifié en CI | Framework Next.js détecté automatiquement ; plateforme détectée via `VERCEL=1`/`VERCEL_ENV` ; **URL publique auto-résolue** (`VERCEL_PROJECT_PRODUCTION_URL` en production, `VERCEL_URL` en preview) sans variable dupliquée ; garde-fou serverless identique à Netlify (PGlite/stockage local refusés) ; limite de téléversement signalée dès 4,5 Mo (`MAX_UPLOAD_BYTES=4194304`) ; **préflight Vercel factice dans la CI** ; guide `docs/vercel.md` | **Déploiement réel à effectuer par le propriétaire (compte Vercel)** — seuls les préflights factices sont testés ici |
 | Supervision / vérification | ✅ `GET /api/health` (200, 25/25 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** (connexion TOTP→OTP réelle, jeton injecté) |
 | CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #6 (run `42422750335` : types, lint, 148 tests, préflight Netlify, **audit de schéma**, build). Les six étapes passent ; `npm run test:e2e` (Playwright) n’est pas à la CI |
 | Base de production | 🟢 **25/25 migrations appliquées et vérifiées** (11 nov. 2026 via connecteur) : `0024_supabase_email_verification_sync` (récupération de la dérive du 10 nov., `EXECUTE` de `sync_auth_email_confirmation` refermé à `anon`/`authenticated`) et `0025_login_challenges` (RLS + forcée, 1 politique, `organix_app` uniquement côté public) ; journal `app.migrations` à **25**, 50 tables, 134 politiques, RLS forcée 50/50 |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
-| Déploiement | ⚠️ **Bloqué côté Netlify, pas côté dépôt** — le build de production échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site qui déploie `main`** (portée builds **et** fonctions) ; **et** tant que Resend n'est pas configuré (`MAIL_TRANSPORT=resend` + `RESEND_API_KEY`) ou que `AUTH_LOGIN_OTP=false` n'est pas posé (le code OTP, actif par défaut, exige un envoi d'e-mail réel) : `docs/netlify.md` § 3 et § 3.1 |
+| Déploiement | ⚠️ **Bloqué côté hébergeur, pas côté dépôt** — sur Netlify, le build échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site qui déploie `main`** ; sur Vercel, mêmes variables (+ `RESEND_API_KEY`) à poser sur le projet Vercel : sans elles, la base et les e-mails sont inaccessibles aux fonctions. **et** tant que Resend n'est pas configuré (`MAIL_TRANSPORT=resend` + `RESEND_API_KEY`) ou que `AUTH_LOGIN_OTP=false` n'est pas posé (le code OTP, actif par défaut, exige un envoi d'e-mail réel) : `docs/netlify.md` § 3 et § 3.1 · `docs/vercel.md` § 3 |
 | Sites Netlify branchés | ⚠️ **Cinq** projets construisent le même dépôt, chacun avec son propre jeu de variables — cause directe du « la variable est pourtant saisie » ; à ramener à un (`docs/netlify.md` § 2.1) |
 | Garde-fou réservé à la production | ✅ `netlify.toml` déclare `[context.deploy-preview]` et `[context.branch-deploy]` en `npm run build` : un aperçu ne peut plus échouer sur des secrets qu'il ne doit pas recevoir (`next build` sans aucune variable = code 0, vérifié le 8 nov.) |
 | Extensions `pg_cron` / `pg_net` | ⚠️ **Non installées** — sans effet sur la purge des sessions, assurée par `.github/workflows/cron.yml` + `MAINTENANCE_SECRET` ; à activer seulement pour le keep-alive du projet gratuit (`docs/supabase.md` § 7) |
@@ -225,7 +227,8 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
    de connexion.
 2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 25 migrations
    (dont `0025_login_challenges`), tester une restauration, exécuter le workflow CI sur GitHub et
-   déployer sur Netlify.
+   déployer sur **Vercel** (`docs/vercel.md`) ou sur Netlify (`docs/netlify.md`) — le dépôt est
+   prêt pour les deux ; la saisie des secrets reste du ressort du propriétaire.
 3. **Transport d'e-mail réel (prérequis OTP)** : fournir une clé Resend (gratuit) et un domaine
    vérifié ; sans cela, définir `AUTH_LOGIN_OTP=false` le temps du déploiement ; activer ensuite
    la vérification d'adresse obligatoire.

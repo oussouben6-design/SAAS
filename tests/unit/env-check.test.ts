@@ -214,3 +214,55 @@ describe("variables à définir (remedes du controle de configuration)", () => {
     expect(result.warnings.join(" ")).toMatch(/MAIL_TRANSPORT=console n'envoie aucun e-mail/);
   });
 });
+describe("Vercel (préflight serverless identique à Netlify)", () => {
+  const vercelBase: Record<string, string> = {
+    ...serverlessBase,
+    NETLIFY: "",
+    CONTEXT: "",
+    DEPLOY_PRIME_URL: "",
+    APP_URL: "",
+    VERCEL: "1",
+    VERCEL_ENV: "production",
+    VERCEL_PROJECT_PRODUCTION_URL: "excellence360.vercel.app",
+  };
+
+  it("accepte une configuration Vercel + Supabase complète et résout l'URL native", () => {
+    const env = { ...vercelBase };
+    delete env.APP_URL;
+    const result = checkEnvironment(env);
+    expect(result.errors).toEqual([]);
+    expect(result.notes.join(" ")).toMatch(/URL Vercel utilisée/);
+    expect(result.notes.join(" ")).toMatch(/excellence360\.vercel\.app/);
+  });
+
+  it("résout l'URL de preview depuis VERCEL_URL (hors production)", () => {
+    const env: Record<string, string> = {
+      ...vercelBase,
+      VERCEL_ENV: "preview",
+      VERCEL_URL: "excellence360-git-branche.vercel.app",
+    };
+    delete env.APP_URL;
+    delete env.VERCEL_PROJECT_PRODUCTION_URL;
+    const result = checkEnvironment(env);
+    expect(result.errors).toEqual([]);
+    expect(result.notes.join(" ")).toMatch(/excellence360-git-branche\.vercel\.app/);
+  });
+
+  it("refuse PGlite et le stockage local sur Vercel, comme sur Netlify", () => {
+    const result = checkEnvironment({
+      ...vercelBase,
+      DATABASE_MODE: "pglite",
+      DATABASE_URL: "",
+      STORAGE_DRIVER: "local",
+    });
+    expect(result.errors.join(" ")).toMatch(/pglite est inutilisable/i);
+    expect(result.errors.join(" ")).toMatch(/STORAGE_DRIVER=local/i);
+  });
+
+  it("avertit au-delà de 4,5 Mo de téléversement (limite Vercel)", () => {
+    const tooBig = checkEnvironment({ ...vercelBase, MAX_UPLOAD_BYTES: "5242880" });
+    expect(tooBig.warnings.join(" ")).toMatch(/fonctions Vercel/i);
+    const ok = checkEnvironment({ ...vercelBase, MAX_UPLOAD_BYTES: "4194304" });
+    expect(ok.warnings.join(" ")).not.toMatch(/fonctions Vercel/i);
+  });
+});

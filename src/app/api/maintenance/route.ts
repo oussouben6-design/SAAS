@@ -5,7 +5,7 @@ import { closeDb } from "@/lib/db";
 
 /**
  * Maintenance planifiée, déclenchable par un cron externe (GitHub Actions, cron-job.org,
- * Netlify Scheduled Function…).
+ * Vercel Cron ou Netlify Scheduled Function…).
  *
  * Protégée par `MAINTENANCE_SECRET` (en-tête `Authorization: Bearer <secret>` ou `?token=`).
  * Sans secret configuré, la route répond 503 : elle ne doit jamais être ouverte par défaut.
