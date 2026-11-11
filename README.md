@@ -91,6 +91,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | [`docs/administration.md`](docs/administration.md) | Rôles, permissions, gestion de l'équipe et des modules |
 | [`docs/guide-utilisateur.md`](docs/guide-utilisateur.md) | Guide des écrans disponibles |
 | [`docs/vercel.md`](docs/vercel.md) | **Déploiement Vercel** : import, variables, domaine, limites serverless, cron de maintenance |
+| [`docs/mettre-en-ligne.md`](docs/mettre-en-ligne.md) | **Mise en ligne guidée** : checklist unique Vercel/Netlify, mode personnel (sans compte), diagnostic « mises à jour non visibles » |
 | [`docs/netlify.md`](docs/netlify.md) | **Déploiement Netlify** : variables, limites serverless, domaine, cron de maintenance |
 | [`docs/deploiement.md`](docs/deploiement.md) | Mise en production, domaine, sauvegardes |
 | [`docs/sauvegarde-restauration.md`](docs/sauvegarde-restauration.md) | Sauvegarde et restauration vérifiables (script testé) |
