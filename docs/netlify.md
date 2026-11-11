@@ -253,3 +253,40 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 - [ ] Secrets GitHub `APP_URL` / `MAINTENANCE_SECRET` posés (keep-alive + purge)
 - [ ] Sauvegarde `pg_dump` planifiée et restauration testée
 - [ ] 2FA activée pour le compte propriétaire
+## 8. Accès personnel sans aucun compte (mode personnel)
+
+Si votre objectif est : **ouvrir le site et vous retrouver directement dans l'application** — aucun
+formulaire de compte, mot de passe ni code — définissez la variable d'environnement
+`PERSONAL_MODE=true` (Site configuration → Environment variables, scopes **production**) puis
+**redéployez** (les variables ne s'appliquent qu'aux nouveaux déploiements).
+
+- Le build accepte ce mode **sans Resend** : le préflight (`npm run env:check`) ne refuse plus le
+  déploiement pour absence de transport d'e-mail, car aucune page de connexion n'est exposée.
+- Le compte réel personnel est créé au premier accès (`PERSONAL_OWNER_EMAIL`, défaut
+  `personnel@organix.local`) et l'organisation réelle « Mon espace Excellence 360 » est créée si
+  absente (vide, aucun contenu fictif). Voir [`docs/mode-personnel.md`](mode-personnel.md) —
+  **avertissement obligatoire** : sur un domaine public, toute personne connaissant l'adresse a un
+  accès complet à vos données ; protégez le domaine ou gardez le lien privé.
+- Paramètres (tous optionnels) : `PERSONAL_MODE=true`, `PERSONAL_OWNER_EMAIL`, `PERSONAL_OWNER_NAME`,
+  `PERSONAL_ORG_NAME`, `PERSONAL_ORG_CURRENCY`, `PERSONAL_ORG_TIMEZONE`.
+- Pour revenir à la connexion normale : retirez `PERSONAL_MODE` et redéployez.
+
+## 9. Checklist express — de zéro au site en ligne
+
+1. **Un seul site Netlify** pour ce dépôt (voir § 2.1) — branchez GitHub → dépôt
+   `oussouben6-design/SAAS`, branche **`main`**, production branch `main`.
+2. **Build** : Netlify lit `netlify.toml` (commande `npm run env:check && npm run build`, publish
+   `.next`, Node 22). Rien à configurer dans le dépôt, il est déjà prêt.
+3. **Variables d'environnement** (Site configuration → Environment variables, scopes **production**) :
+   - `DATABASE_URL` = `postgresql://postgres.opnlvqwbevnivfjpbrxa:<MOT_DE_PASSE_DB>@aws-0-eu-west-3.pooler.supabase.com:6543/postgres`
+     (mot de passe défini à la création du projet Supabase ; sinon Database → Reset password) ;
+   - `SUPABASE_URL` = `https://opnlvqwbevnivfjpbrxa.supabase.co` ;
+   - `SUPABASE_SERVICE_ROLE_KEY` = Project Settings → API → **service_role** (secret) ;
+   - `PERSONAL_MODE=true` (accès sans compte, voir § 8) — optionnel mais c'est ce que vous demandiez ;
+   - recommandées : `MFA_ENCRYPTION_KEY` (`openssl rand -base64 32`), `MAINTENANCE_SECRET`.
+4. **Deploy** → attendre le statut **Ready** (pas seulement « Queued »).
+5. **Ouvrir le domaine en navigation privée** (Ctrl+Shift+R). Si c'est encore l'ancienne page :
+   vérifiez que *Deploys → Production deploys* affiche le commit le plus récent, que *Production
+   branch* est bien `main`, puis que ce domaine n'est pas attaché à un autre site du dépôt (§ 2.1).
+6. En cas d'erreur de build « env:check », lisez le message : il liste les variables manquantes et
+   où les trouver — ne corrigez rien dans le dépôt.
