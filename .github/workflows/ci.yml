@@ -52,6 +52,8 @@ jobs:
       - name: Préflight Netlify (valeurs factices, aucun secret réel)
         # Vérifie la logique de configuration utilisée par netlify.toml. Les valeurs
         # ci-dessous ne servent qu'à la validation statique ; aucune connexion n'est faite.
+        # Avec AUTH_LOGIN_OTP actif par défaut, une configuration complète et valide
+        # inclut un transport d'e-mail réel : on simule Resend (factice), pas console.
         run: env -u APP_URL -u NEXT_PUBLIC_APP_URL npm run env:check
         env:
           NETLIFY: "true"
@@ -65,6 +67,9 @@ jobs:
           SUPABASE_URL: "https://ci.supabase.co"
           SUPABASE_SERVICE_ROLE_KEY: "ci-only-not-a-real-secret"
           SUPABASE_STORAGE_BUCKET: "documents"
+          MAIL_TRANSPORT: "resend"
+          RESEND_API_KEY: "ci-only-not-a-real-secret"
+          MAIL_FROM: "CI <ci@example.com>"
           MAX_UPLOAD_BYTES: "5242880"
 
       - name: Tests unitaires et d'intégration
