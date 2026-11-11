@@ -25,7 +25,8 @@
     "0021_rls_insert_policies_are_insert_only.sql",
     "0022_rls_context_accepts_supabase_jwt.sql",
     "0023_rpc_surface.sql",
-    "0024_login_challenges.sql"
+    "0024_supabase_email_verification_sync.sql",
+    "0025_login_challenges.sql"
   ],
   "tables": [
     "announcements",

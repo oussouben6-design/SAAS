@@ -1,7 +1,7 @@
 # PROJECT STATUS — Excellence 360 CRM
 
 Dernière mise à jour : **11 novembre 2026** (branche `arena/1787ab9b-saas` : **code de connexion par
-e-mail (OTP)** à chaque connexion — 24 migrations, schéma conforme au dépôt et vérifié en base).
+e-mail (OTP)** à chaque connexion — 25 migrations, schéma conforme au dépôt et vérifié en base).
 
 Ce document décrit l'état **réellement vérifié** du produit. Aucune fonctionnalité n'y est déclarée
 comme opérationnelle sans test automatisé ou vérification HTTP associée. Les éléments non terminés
@@ -13,7 +13,7 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | **24/24** appliquées sans erreur (PGlite), idempotentes — `0015`→`0023` couvrent la récupération de la dérive Supabase, le durcissement et le contexte RLS lisant le jeton ; `0024` ajoute `login_challenges` (code de connexion par e-mail) — migrations `0015`→`0024` non encore appliquées en production, à jouer à la mise en ligne (cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
+| Migrations SQL | **25/25** appliquées sans erreur (PGlite), idempotentes — `0015`→`0023` couvrent la récupération de la dérive Supabase, le durcissement et le contexte RLS lisant le jeton ; `0025` ajoute `login_challenges` (code de connexion par e-mail) — migrations `0024` (récupération de la dérive du 10 nov.) et `0025` (OTP) non encore appliquées en production au moment de la rédaction, à jouer à la mise en ligne (cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Tables métier | 50 |
 | Audit de dérive Git ↔ base | ✅ `npm run db:audit` + verrou `supabase/schema-lock.json` (134 politiques, 31 déclencheurs, 13 fonctions, 567 colonnes) — étape ajoutée à la CI |
 | Politiques RLS | **134** (RLS activée **et forcée** sur les 50 tables publiques) ; 0 politique lisible sans restriction (`for all`/`for select` sans `USING`), contrôlé par `npm run db:audit` |
@@ -25,9 +25,9 @@ sont explicitement listés.
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
-| Supervision / vérification | ✅ `GET /api/health` (200, 24/24 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** (connexion TOTP→OTP réelle, jeton injecté) |
+| Supervision / vérification | ✅ `GET /api/health` (200, 25/25 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** (connexion TOTP→OTP réelle, jeton injecté) |
 | CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #6 (run `42422750335` : types, lint, 148 tests, préflight Netlify, **audit de schéma**, build). Les six étapes passent ; `npm run test:e2e` (Playwright) n’est pas à la CI |
-| Base de production | 🟡 **assainie** (8 nov. : 0 compte orphelin, `auth.users = 0`) ; journal `app.migrations` à **23** = 23 migrations du dépôt jusqu'à cette branche ; **la `0024_login_challenges` doit être appliquée en production** au déploiement (`npm run db:migrate` ou le connecteur Supabase) — sans elle, la connexion OTP échouerait côté base |
+| Base de production | 🟡 **assainie** (8 nov. : 0 compte orphelin, `auth.users = 0`) ; journal `app.migrations` à **24** (23 dépôt + `0024_supabase_email_verification_sync`, appliquée hors Git le 10 nov. et récupérée dans le dépôt le même jour) ; **la migration `0025_login_challenges` doit être appliquée en production** au déploiement (`npm run db:migrate` ou le connecteur Supabase) — sans elle, la connexion OTP échouerait côté base |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
 | Déploiement | ⚠️ **Bloqué côté Netlify, pas côté dépôt** — le build de production échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site qui déploie `main`** (portée builds **et** fonctions) ; **et** tant que Resend n'est pas configuré (`MAIL_TRANSPORT=resend` + `RESEND_API_KEY`) ou que `AUTH_LOGIN_OTP=false` n'est pas posé (le code OTP, actif par défaut, exige un envoi d'e-mail réel) : `docs/netlify.md` § 3 et § 3.1 |
@@ -81,7 +81,7 @@ chacune suivie du lieu de saisie et de la source de la valeur, dès qu’un secr
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 49 tables, 133 politiques RLS (base de dev, avant 0024)
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
-npm run db:migrate      → 24/24 migrations, 50 tables, 134 politiques RLS
+npm run db:migrate      → 25/25 migrations, 50 tables, 134 politiques RLS
 Vérification HTTP de l'OTP (dev, transport console) : authenticate → `login_otp_required` (aucun
 jeton de session en base) ; completeLoginOtp avec le code → session ouverte ; smoke 20/20 avec le
 jeton obtenu via le flux OTP réel
@@ -134,7 +134,7 @@ télécharger dans cet environnement.
   (valeurs factices, aucune connexion externe) et **4 erreurs** assorties de leur remède dès
   qu’un secret manque — cas du premier déploiement Netlify.
 - `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
-  métier, `/api/health` → `ok`, 24/24 migrations).
+  métier, `/api/health` → `ok`, 25/25 migrations).
 - **Flux OTP vérifié de bout en bout (base de démonstration, transport console)** : `authenticate`
   renvoie `login_otp_required` sans créer de session (vérifié en base : 0 session, code haché en
   base avec préfixe `scrypt:`) ; le code affiché à l'écran en développement permet à
@@ -216,8 +216,8 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
 1. **Finaliser la connexion Google** : créer les identifiants OAuth dans Google Cloud, déclarer
    `<APP_URL>/api/auth/google/callback`, renseigner les secrets dans l'environnement et tester une
    connexion réelle (guide : `docs/configuration.md`).
-2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 24 migrations
-   (dont `0024_login_challenges`), tester une restauration, exécuter le workflow CI sur GitHub et
+2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 25 migrations
+   (dont `0025_login_challenges`), tester une restauration, exécuter le workflow CI sur GitHub et
    déployer sur Netlify.
 3. **Transport d'e-mail réel (prérequis OTP)** : fournir une clé Resend (gratuit) et un domaine
    vérifié ; sans cela, définir `AUTH_LOGIN_OTP=false` le temps du déploiement ; activer ensuite

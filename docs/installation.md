@@ -139,7 +139,7 @@ npm run typecheck     # aucune erreur TypeScript
 npm run lint          # aucune erreur ESLint
 npm test              # tests unitaires + intégration (base PGlite temporaire)
 npm run build         # build de production
-npm run db:status     # 24/24 migrations, volumétrie
+npm run db:status     # 25/25 migrations, volumétrie
 ```
 
 Puis, dans le navigateur : `/` (page publique), `/inscription`, `/connexion`, `/app` (tableau de
