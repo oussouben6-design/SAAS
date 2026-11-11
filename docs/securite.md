@@ -80,20 +80,6 @@
   `tests/integration/google-auth.test.ts` (session directe en un clic après Google,
   `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google → 2FA → session ou code e-mail).
 
-## Authentification : mode démo public
-
-- **« Explorer la démo — sans compte »** (bouton public sur `/connexion`) : aucune identité
-  n'est requise ; une session est ouverte sur une organisation **fictive** isolée (`is_demo`,
-  bandeau permanent « Espace de démonstration »). Le profil mutualisé `demo.visiteur@organix.local`
-  ne possède **aucun identifiant de connexion** et n'appartient à aucune organisation réelle ;
-  la RLS l'empêche d'atteindre toute donnée hors de la démo.
-- L'organisation de démo est **réutilisée si elle existe** (jeux de données seed), sinon elle est
-  créée à la première ouverture avec trois clients fictifs ; l'accès est limité à **20 ouvertures
-  par adresse IP et par 15 minutes** (limitation de débit). Les données y sont **partagées entre
-  visiteurs** — c'est une démo, pas un espace de travail.
-- Couverture : `tests/integration/demo-mode.test.ts` (session valide sans compte, organisation
-  `is_demo` unique et idempotente, aucun identifiant, aucun accès aux organisations réelles).
-
 ## Autorisation
 
 - Le catalogue fait foi en base (`permissions`, `role_permissions`) ; `src/lib/permissions` en est
