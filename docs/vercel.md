@@ -14,7 +14,7 @@ perte silencieuse de données.
 
 Comme pour Netlify (`docs/supabase.md`) : projet créé, schéma appliqué (`npm run db:migrate` avec
 `DATABASE_MODE=postgres` et `DATABASE_URL` sur le **pooler port 6543**), bucket privé `documents`,
-compte réel via `npm run admin:create` (jamais `db:seed` en production). Les 25 migrations sont déjà
+compte réel via `npm run admin:create` (jamais `db:seed` en production). Les 26 migrations sont déjà
 appliquées et vérifiées en production Supabase (11 nov. 2026, voir `PROJECT_STATUS.md`).
 
 ## 2. Importer le projet dans Vercel
@@ -62,7 +62,7 @@ npm run smoke -- --url https://<votre-domaine>
 # ou injectez un jeton avec --token
 ```
 
-`GET https://<votre-domaine>/api/health` doit répondre `{"status":"ok", … 25/25 migrations …}`.
+`GET https://<votre-domaine>/api/health` doit répondre `{"status":"ok", … 26/26 migrations …}`.
 `npm run env:check` en local affiche la plateforme détectée (`vercel`), l'URL publique résolue et
 chaque variable manquante avec son lieu de saisie — sans jamais imprimer de valeur.
 

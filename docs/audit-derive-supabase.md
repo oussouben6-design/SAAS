@@ -137,19 +137,22 @@ rôles Supabase sur les trois RPC, et supprimer `notifications` de la publicatio
 | Dérive du 10 nov. constatée (11 nov.) : `0024_supabase_email_verification_sync` (13:58) + `0024_supabase_auth_profile_trigger_conflict` (15:11) appliquées hors Git — pont `auth.users` → `profiles` | constat 11 nov. | `handle_new_user` `on conflict do nothing`, `sync_auth_email_confirmation` SECURITY DEFINER avec EXECUTE accordé à `anon`/`authenticated` (reste du drift) |
 | Dérive du 10 nov. **récupérée** en dépôt : `0024_supabase_email_verification_sync.sql` (définitions fidèles via `pg_get_functiondef`/`pg_get_triggerdef`, `EXECUTE` du déclencheur de synchro refermé à `service_role`), OTP renumérotée `0025` | 11 nov. | `npm run db:audit` conforme (25 migrations, PGlite neuve) ; **appliquées en production le 11 nov. via connecteur** : journal `app.migrations` à 25, 50 tables, 134 politiques ; `login_challenges` RLS + forcée ; ACL `login_challenges` = `{postgres, service_role, organix_app}` (0 `anon`/`authenticated`) ; ACL `sync_auth_email_confirmation` = `{postgres, service_role}` |
 
+| **Dérive du 12 nov. constatée** : le modèle « RPC assumé » n'était **pas exécutable en production**. `has_schema_privilege('authenticated', 'app', 'USAGE')` = **false** — `0013`/`0020` révoquent l'usage du schéma `app`, rien ne le rétablit. Mesure : `set local role authenticated; select app.current_user_id()` → `42501: permission denied for schema app`. Le contexte JWT de `0022` était juste mais **inatteignable**. `public.rls_auto_enable()` restait aussi exécutable par `anon`/`authenticated` : son `proacl` valait `{=X/postgres,…}`, droit hérité de PUBLIC que révoquer des rôles nommés ne retire pas (`0020`/`0023` semblaient sans effet). | constat 12 nov. | 134 politiques identiques au dépôt (md5 par table) ; `quotes`/`quote_items` en `crm` alors que l'application exige `finance` |
+| **Récupérée** par `0026_rpc_surface_enforcement.sql` (énoncé ci-dessus), **appliquée en production le 12 nov. via connecteur** | 12 nov. | `auth_usage_app = true`, `anon_usage_app = false`, `anon_rls_auto = false`, `auth_rls_auto = false` ; journal `app.migrations` porté à **26** ; 8/8 empreintes md5 des politiques `quotes`/`quote_items` **identiques** entre dépôt et production ; requête sous `role authenticated` avec `request.jwt.claims` → `app.current_user_id()` renvoie le sujet, `has_permission(...)` s'évalue, `select ... from notifications` répond (0 ligne) au lieu de `42501` |
+
 ## 7. Ce que l'audit a produit de vérifiable
 
-État au 11 novembre 2026 : récupération `0024_supabase_email_verification_sync.sql`
-(journal du 10 nov., appliqué hors Git — pont `auth.users` → `profiles`) et migration
-`0025_login_challenges.sql` (code de connexion OTP) — **les deux à traiter au prochain déploiement** :
+État au 12 novembre 2026 (26 migrations, `0026` incluse et appliquée en production) :
 
 ```
-PGlite neuve, 25 migrations                 → 50 tables · 134 politiques · 31 déclencheurs · 13 fonctions · 567 colonnes
+PGlite neuve, 26 migrations                 → 50 tables · 134 politiques · 31 déclencheurs · 13 fonctions · 567 colonnes
 npm run db:audit (après --update du verrou) → « Schéma conforme au dépôt : aucune dérive détectée. »
-npm test                                    → 141/141 tests en 20 fichiers (dont 6 sur le
-#                                             contexte JWT et 5 sur les remèdes du
-#                                             contrôle de configuration)
-npx tsc --noEmit · npx eslint .             → 0 erreur
+npm test                                    → 166/166 tests en 23 fichiers, dont 7 dans
+#                                             tests/integration/rpc-surface.test.ts (usage du
+#                                             schéma app, ACL héritées de PUBLIC, devis/finance)
+npm run typecheck · npm run lint · npm run build → 0 erreur
 Simulation de dérive (5 entrées de journal, 5 politiques, 1 fonction en plus)
                                             → 4 anomalies signalées, code de sortie 1
+Reproduction de l'état prod du 12 nov. (usage app révoqué + rls_auto_enable PUBLIC)
+                                            → 2 anomalies signalées par les contrôles 4 bis/4 ter
 ```

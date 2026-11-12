@@ -24,7 +24,7 @@ l'application refuse explicitement de démarrer dans ce cas
 
 1. Projet Supabase créé, mot de passe de base enregistré (`docs/supabase.md` §2-3).
 2. Schéma appliqué : `npm run db:migrate` avec `DATABASE_MODE=postgres` et `DATABASE_URL` sur le
-   pooler → `npm run db:status` doit afficher **25/25 migrations** et
+   pooler → `npm run db:status` doit afficher **26/26 migrations** et
    « Bascule de rôle applicatif : OK ».
 3. Bucket `documents` créé, **privé**. Sa limite côté Supabase peut rester à 10 Mo : c'est
    `MAX_UPLOAD_BYTES=5242880` (5 Mo, déjà dans `netlify.toml`) qui borne réellement l'envoi,
@@ -242,7 +242,7 @@ Alternative sans GitHub : Netlify **Scheduled Functions**, ou un service de cron
 
 ## 10. Checklist de mise en service
 
-- [ ] Migrations appliquées (25/25) et `db:status` : bascule de rôle **OK**, 50/50 RLS forcée
+- [ ] Migrations appliquées (26/26) et `db:status` : bascule de rôle **OK**, 50/50 RLS forcée
 - [ ] Compte propriétaire réel créé (`admin:create`) ; aucun `db:seed` en production
 - [ ] Variables d'environnement complètes (`npm run env:check` sans erreur) **et** de portée build +
       fonctions (§ 3.1), vérifiées dans le bloc « Resolved config » du log de build

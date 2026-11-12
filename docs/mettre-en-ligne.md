@@ -12,7 +12,7 @@ de compte, mot de passe ni code (mode personnel). **~10 minutes, zéro ligne de 
 - `main` contient : retrait du mode démo, **mode personnel** (`PERSONAL_MODE`), vue consolidée aux
   couleurs du logo, préflight `env:check` compatible avec le mode personnel (pas de Resend exigé).
 - `netlify.toml` prêt (Node 22, publish `.next`) ; Vercel détecte Next.js automatiquement.
-- Supabase `opnlvqwbevnivfjpbrxa` : **25 migrations déjà appliquées**, service sain (eu-west-3).
+- Supabase `opnlvqwbevnivfjpbrxa` : **26 migrations déjà appliquées**, service sain (eu-west-3).
 
 ## Les 5 étapes
 

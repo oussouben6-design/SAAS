@@ -1,6 +1,13 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **11 novembre 2026** (branche `arena/8fe3a9da-saas` : **Netlify + mode personnel** —
+Dernière mise à jour : **12 novembre 2026** (branche `arena/fdc743cf-saas` : **modèle RPC réellement
+exécutable en production** —`0026_rpc_surface_enforcement.sql` rétablit l'`USAGE` du schéma `app` pour
+`authenticated` (sans lui, toute politique RLS échouait en `42501` sur les voies PostgREST/Realtime/RPC),
+supprime les `EXECUTE` hérités de PUBLIC que révoquer des rôles nommés ne retirait pas, et aligne
+`quotes`/`quote_items` sur le module `finance` comme le fait l'application. Migration appliquée en
+production et vérifiée ; deux contrôles ajoutés à `db:audit` ; 7 tests de non-régression).
+
+Dernière précédente : **11 novembre 2026** (branche `arena/8fe3a9da-saas` : **Netlify + mode personnel** —
 `netlify.toml` déjà en place ; préflight `env:check` accepte le **mode personnel** sans Resend (aucune page de connexion → code e-mail jamais exigé) ; guide netlify.md étendu (§ 8 accès personnel sans compte, § 9 checklist express). S'ajoute au **mode personnel** (branche précédente) —
 bouton démo retiré (retour au site réel) + `PERSONAL_MODE` : accès direct à `/app` sans aucun compte,
 pour un déploiement personnel (voir `docs/mode-personnel.md`, réservé à un usage privé). S'ajoute au
@@ -23,14 +30,14 @@ sont explicitement listés.
 
 | Indicateur | Valeur vérifiée |
 | --- | --- |
-| Migrations SQL | **25/25** appliquées sans erreur (PGlite), idempotentes — `0015`→`0023` couvrent la récupération de la dérive Supabase, le durcissement et le contexte RLS lisant le jeton ; `0024` (récupération de la dérive du 10 nov.) et `0025` (OTP `login_challenges`) **appliquées en production le 11 nov. 2026** via le connecteur Supabase (journal `app.migrations` à 25, 50 tables, 134 politiques) (cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
+| Migrations SQL | **26/26** appliquées sans erreur (PGlite), idempotentes — `0015`→`0023` couvrent la récupération de la dérive Supabase, le durcissement et le contexte RLS lisant le jeton ; `0024` (récupération de la dérive du 10 nov.) et `0025` (OTP `login_challenges`) **appliquées en production le 11 nov. 2026**, puis `0026_rpc_surface_enforcement` (modèle RPC exécutable + devis/finance) **appliquée le 12 nov. 2026** via le connecteur Supabase (journal `app.migrations` à **26**, 50 tables, 134 politiques) (cf. [`docs/audit-derive-supabase.md`](./docs/audit-derive-supabase.md)) |
 | Tables métier | 50 |
 | Audit de dérive Git ↔ base | ✅ `npm run db:audit` + verrou `supabase/schema-lock.json` (134 politiques, 31 déclencheurs, 13 fonctions, 567 colonnes) — étape ajoutée à la CI |
 | Politiques RLS | **134** (RLS activée **et forcée** sur les 50 tables publiques) ; 0 politique lisible sans restriction (`for all`/`for select` sans `USING`), contrôlé par `npm run db:audit` |
 | Permissions | 61 (catalogue 16 modules × 7 actions, actions activées par module), 6 rôles par défaut |
 | `npm run typecheck` | ✅ 0 erreur |
 | `npm run lint` | ✅ 0 erreur, 0 avertissement |
-| `npm test` (Vitest) | ✅ **159 tests / 159** en 22 fichiers (~80 s), dont 6 sur le contexte RLS lu depuis un JWT, **9 sur les remèdes du contrôle de configuration** (dont **4 nouveaux Vercel** : préflight, URL native production/preview, garde serverless, limite de téléversement), **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et 4 sur l'exemption Google (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
+| `npm test` (Vitest) | ✅ **166 tests / 166** en 23 fichiers (~85 s), dont **7 nouveaux** sur l'exécutabilité du modèle RPC (`tests/integration/rpc-surface.test.ts` : usage du schéma `app`, ACL héritées de PUBLIC, devis soumis à `finance`), 6 sur le contexte RLS lu depuis un JWT, **9 sur les remèdes du contrôle de configuration** (dont **4 nouveaux Vercel** : préflight, URL native production/preview, garde serverless, limite de téléversement), **7 sur le code de connexion OTP** (6 intégration + 1 contrôle `env:check`) et 4 sur l'exemption Google (session directe en un clic, `AUTH_LOGIN_OTP_GOOGLE=true`, chaîne Google + 2FA) |
 | `npm run build` | ✅ build de production vérifié ; `next start` et en-têtes CSP/HSTS vérifiés précédemment |
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
@@ -38,7 +45,7 @@ sont explicitement listés.
 | Hébergement Vercel | ✅ Support ajouté et vérifié en CI | Framework Next.js détecté automatiquement ; plateforme détectée via `VERCEL=1`/`VERCEL_ENV` ; **URL publique auto-résolue** (`VERCEL_PROJECT_PRODUCTION_URL` en production, `VERCEL_URL` en preview) sans variable dupliquée ; garde-fou serverless identique à Netlify (PGlite/stockage local refusés) ; limite de téléversement signalée dès 4,5 Mo (`MAX_UPLOAD_BYTES=4194304`) ; **préflight Vercel factice dans la CI** ; guide `docs/vercel.md` | **Déploiement réel à effectuer par le propriétaire (compte Vercel)** — seuls les préflights factices sont testés ici |
 | Supervision / vérification | ✅ `GET /api/health` (200, 25/25 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** (connexion TOTP→OTP réelle, jeton injecté) |
 | CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #6 (run `42422750335` : types, lint, 148 tests, préflight Netlify, **audit de schéma**, build). Les six étapes passent ; `npm run test:e2e` (Playwright) n’est pas à la CI |
-| Base de production | 🟢 **25/25 migrations appliquées et vérifiées** (11 nov. 2026 via connecteur) : `0024_supabase_email_verification_sync` (récupération de la dérive du 10 nov., `EXECUTE` de `sync_auth_email_confirmation` refermé à `anon`/`authenticated`) et `0025_login_challenges` (RLS + forcée, 1 politique, `organix_app` uniquement côté public) ; journal `app.migrations` à **25**, 50 tables, 134 politiques, RLS forcée 50/50 |
+| Base de production | 🟢 **26/26 migrations appliquées et vérifiées** (11-12 nov. 2026 via connecteur) : `0024_supabase_email_verification_sync` (récupération de la dérive du 10 nov., `EXECUTE` de `sync_auth_email_confirmation` refermé à `anon`/`authenticated`) `0025_login_challenges` (RLS + forcée, 1 politique, `organix_app` uniquement côté public) et **`0026_rpc_surface_enforcement`** ; journal `app.migrations` à **26**, 50 tables, 134 politiques, RLS forcée 50/50. **Vérifié le 12 nov. après `0026`** : `has_schema_privilege('authenticated','app','USAGE')` = **true** (c'était **false**), `has_schema_privilege('anon','app','USAGE')` = false, `rls_auto_enable()` non exécutable par `anon`/`authenticated`, et requête `set local role authenticated` + `request.jwt.claims` → `app.current_user_id()` renvoie le sujet, `has_permission(...)` s'évalue, `select … from notifications` répond au lieu de `42501` |
 | Parcours HTTP vérifié manuellement | ✅ pages RH / Finances / Partenaires / Communication et onglets en 200 (admin) ; refus de permission en 307 vers `/app/acces-refuse` |
 | `npm run test:e2e` (Playwright) | ⚠️ **Non exécuté** — navigateurs non téléchargeables dans l'environnement |
 | Déploiement | ⚠️ **Bloqué côté hébergeur, pas côté dépôt** — sur Netlify, le build échoue sur `env:check` tant que `DATABASE_URL`, `SUPABASE_URL` et `SUPABASE_SERVICE_ROLE_KEY` ne sont pas saisies sur le **site qui déploie `main`** ; sur Vercel, mêmes variables (+ `RESEND_API_KEY`) à poser sur le projet Vercel : sans elles, la base et les e-mails sont inaccessibles aux fonctions. **et** tant que Resend n'est pas configuré (`MAIL_TRANSPORT=resend` + `RESEND_API_KEY`) ou que `AUTH_LOGIN_OTP=false` n'est pas posé (le code OTP, actif par défaut, exige un envoi d'e-mail réel) : `docs/netlify.md` § 3 et § 3.1 · `docs/vercel.md` § 3 |
@@ -84,7 +91,7 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 21 passed (21) · Tests 148 passed (148) · ~78 s
+npm test                → Test Files 23 passed (23) · Tests 166 passed (166) · ~85 s
 npm run build           → succès (build de production vérifié sur la branche, 11 nov. 2026)
 Netlify (simulation)     → env:check + build OK avec valeurs factices, sans connexion externe
 npm run env:check (simulation Netlify) → 0 erreur avec les secrets factices ; 4 erreurs,
@@ -92,7 +99,7 @@ chacune suivie du lieu de saisie et de la source de la valeur, dès qu’un secr
 npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
 npm run db:backup -- --verifier → empreintes OK, 49 tables, 133 politiques RLS (base de dev, avant 0024)
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
-npm run db:migrate      → 25/25 migrations, 50 tables, 134 politiques RLS
+npm run db:migrate      → 26/26 migrations, 50 tables, 134 politiques RLS
 Vérification HTTP de l'OTP (dev, transport console) : authenticate → `login_otp_required` (aucun
 jeton de session en base) ; completeLoginOtp avec le code → session ouverte ; smoke 20/20 avec le
 jeton obtenu via le flux OTP réel
@@ -146,7 +153,7 @@ télécharger dans cet environnement.
   (valeurs factices, aucune connexion externe) et **4 erreurs** assorties de leur remède dès
   qu’un secret manque — cas du premier déploiement Netlify.
 - `npm run smoke -- --token …` : **20/20 contrôles réussis** (pages publiques, connexion, 17 pages
-  métier, `/api/health` → `ok`, 25/25 migrations).
+  métier, `/api/health` → `ok`, 26/26 migrations).
 - **Flux OTP vérifié de bout en bout (base de démonstration, transport console)** : `authenticate`
   renvoie `login_otp_required` sans créer de session (vérifié en base : 0 session, code haché en
   base avec préfixe `scrypt:`) ; le code affiché à l'écran en développement permet à
@@ -183,6 +190,9 @@ télécharger dans cet environnement.
    rôle Lecteur n'ouvre pas la page Clients (refus serveur), mais une requête SQL exécutée avec sa
    session renverrait les lignes de son organisation. Les données RH et financières sont filtrées
    par permission en RLS. Décision produit à trancher (`docs/securite.md`).
+   *Précision du 12 nov. 2026* : la voie PostgREST est désormais **fonctionnelle** (`0026`), donc
+   cette limite n'est plus théorique — toute table métier lisible par `authenticated` applique sa
+   politique ; seule `notifications` lui est ouverte en lecture, le reste reste révoqué.
 2. **Rapports et recherche** agrègent des modules que certains rôles n'ouvrent pas en lecture.
 3. **E-mails** : `console` (dev) et `resend` (HTTP) implémentés, `smtp` non. Resend **non testé
    contre un compte réel** (pas de clé, pas de réseau sortant vers Resend ici).
@@ -233,8 +243,8 @@ Mot de passe : `Demo-Organix-2026!` (ou `ORGANIX_SEED_PASSWORD`). L'organisation
    directes, la 2FA TOTP éventuelle reste demandée) ; `AUTH_LOGIN_OTP_GOOGLE=true` rétablit le
    code e-mail après Google. Le bouton « Continuer avec Google » est affiché en tête de la page
    de connexion.
-2. **Déploiement réel + sauvegardes** : créer le projet Supabase, appliquer les 25 migrations
-   (dont `0025_login_challenges`), tester une restauration, exécuter le workflow CI sur GitHub et
+2. **Déploiement réel + sauvegardes** : le projet Supabase existe et porte les 26 migrations
+   (dont `0025_login_challenges` et `0026_rpc_surface_enforcement`) ; tester une restauration, exécuter le workflow CI sur GitHub et
    déployer sur **Vercel** (`docs/vercel.md`) ou sur Netlify (`docs/netlify.md`) — le dépôt est
    prêt pour les deux ; la saisie des secrets reste du ressort du propriétaire.
 3. **Transport d'e-mail réel (prérequis OTP)** : fournir une clé Resend (gratuit) et un domaine
