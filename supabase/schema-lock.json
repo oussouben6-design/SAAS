@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11",
+  "generatedAt": "2026-11-12",
   "driver": "pglite",
   "migrations": [
     "0001_core.sql",
@@ -26,7 +26,8 @@
     "0022_rls_context_accepts_supabase_jwt.sql",
     "0023_rpc_surface.sql",
     "0024_supabase_email_verification_sync.sql",
-    "0025_login_challenges.sql"
+    "0025_login_challenges.sql",
+    "0026_rpc_surface_enforcement.sql"
   ],
   "tables": [
     "announcements",

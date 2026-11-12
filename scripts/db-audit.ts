@@ -4,7 +4,7 @@
  *   npm run db:audit              # contrôle, code de sortie 1 si bloquant
  *   npm run db:audit -- --update  # régénère supabase/schema-lock.json depuis la base courante
  *
- * Cinq contrôles :
+ * Six contrôles :
  *  1. Journal des migrations : `app.migrations` doit contenir exactement les fichiers de
  *     `supabase/migrations/`. Une entrée sans fichier = objet créé hors versionnement (dérive) ;
  *     un fichier sans entrée = migration non appliquée.
@@ -12,7 +12,12 @@
  *  3. Aucun privilège `anon`/`authenticated` sur les tables de `public` (durcissement 0013) :
  *     l'API n'est atteignable que par le serveur Next.js via `organix_app`.
  *  4. Aucune fonction `security definer` de `app`/`public` exécutable par `anon`/`authenticated`.
- *  5. Verrou de schéma (`supabase/schema-lock.json`) : inventaire des tables, colonnes, index,
+ *  5. Modèle RPC réellement exécutable : `authenticated` doit avoir l'USAGE du schéma `app`
+ *     (sinon toute politique RLS échoue en `42501: permission denied for schema app`, même avec
+ *     le contexte JWT de `0022`), `anon` ne doit pas l'avoir, et **aucune** fonction ne doit être
+ *     exécutable par PUBLIC (`proacl` NULL ou entrée `=X/`) — révoquer un rôle nommé ne retire
+ *     pas un droit hérité (défaut mesuré en production le 12 nov. 2026, corrigé par `0026`).
+ *  6. Verrou de schéma (`supabase/schema-lock.json`) : inventaire des tables, colonnes, index,
  *     contraintes, politiques RLS, déclencheurs et fonctions. Toute divergence base/verrou est
  *     une erreur, où qu'elle aille — cela protège à la fois « j'ai modé la base sans le Git » et
  *     « j'ai modifié les migrations sans re-valider la production ».
@@ -159,6 +164,30 @@ async function main() {
     const roles = await tx.query<{ rolname: string }>(
       `select rolname from pg_roles where rolname in ('anon', 'authenticated')`,
     );
+    // Usage du schéma `app` par les rôles d'API. Les politiques appellent toutes
+    // `app.current_user_id()`, `app.has_permission(...)` : PostgreSQL vérifie l'usage du schéma
+    // AVANT d'exécuter la fonction. Sans lui, chaque lecture PostgREST/Realtime/RPC échoue en
+    // `42501: permission denied for schema app` — c'est arrivé en production le 12 nov. 2026
+    // (`0013`/`0020` révoquent l'usage, rien ne le rétablissait).
+    const schemaUsage = await tx
+      .query<{ role: string; usage: boolean }>(
+        `select r.rolname as role, has_schema_privilege(r.rolname, 'app', 'USAGE') as usage
+           from pg_roles r where r.rolname in ('anon', 'authenticated') order by 1`,
+      )
+      .catch(() => [] as { role: string; usage: boolean }[]);
+    // Privilèges hérités de PUBLIC (`proacl` sans entrée par rôle, ou entrée `=X/`). Révoquer un
+    // rôle nommé ne les retire pas : c'est pourquoi `0020`/`0023` semblaient sans effet sur
+    // `public.rls_auto_enable()`.
+    const publicFunctions = await tx
+      .query<{ name: string }>(
+        `select n.nspname || '.' || p.proname as name from pg_proc p
+           join pg_namespace n on n.oid = p.pronamespace
+          where n.nspname in ('app', 'public') and p.prokind = 'f'
+            and (p.proacl is null
+                 or exists (select 1 from unnest(p.proacl) a where a::text like '=X/%'))
+          order by 1`,
+      )
+      .catch(() => [] as { name: string }[]);
     let exposedFunctions: { name: string; role: string }[] = [];
     if (roles.length > 0) {
       exposedFunctions = await tx.query<{ name: string; role: string }>(
@@ -193,6 +222,8 @@ async function main() {
       exposedGrants,
       realtimeTables,
       exposedFunctions,
+      schemaUsage,
+      publicFunctions,
       leakyPolicies,
       supabaseRoles: roles.length > 0,
     };
@@ -260,6 +291,32 @@ async function main() {
       `politique(s) permissive(s) « for all » sans clause USING — donc valables pour SELECT avec ` +
         `USING implicite vrai, ce qui annule l'isolation par organisation : ` +
         `${data.leakyPolicies.map((p) => p.name).join(", ")}.`,
+    );
+  }
+
+  // 4 bis. Privilèges hérités de PUBLIC : proacl NULL = exécutable par tout rôle.
+  if (data.supabaseRoles && data.publicFunctions.length > 0) {
+    errors.push(
+      `fonction(s) exécutable(s) par PUBLIC (aucune ACL explicite, ou entrée « =X/ ») : ` +
+        `${data.publicFunctions.map((f) => f.name).join(", ")}. ` +
+        `Révoquer un rôle nommé ne retire pas un droit hérité de PUBLIC — 0026 rend les ACL explicites.`,
+    );
+  }
+
+  // 4 ter. Usage du schéma `app` : condition d'exécution des politiques RLS.
+  const missingUsage = data.schemaUsage.filter((row) => row.role === "authenticated" && !row.usage);
+  if (missingUsage.length > 0) {
+    errors.push(
+      `« authenticated » n'a pas l'USAGE du schéma app : toute politique RLS échoue en ` +
+        `« 42501: permission denied for schema app » sur les voies PostgREST/Realtime/RPC ` +
+        `(0022 lit le jeton, mais la fonction reste inatteignable). 0026 doit être appliquée.`,
+    );
+  }
+  const anonUsage = data.schemaUsage.filter((row) => row.role === "anon" && row.usage);
+  if (anonUsage.length > 0) {
+    errors.push(
+      `« anon » a l'USAGE du schéma app : aucun jeton, donc aucun besoin, et la surface d'API ` +
+        `générée s'ouvre inutilement sur les prédicats d'autorisation.`,
     );
   }
 
