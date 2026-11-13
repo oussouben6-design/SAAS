@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { getAppContext, listMemberships } from "@/lib/server/context";
@@ -6,6 +7,15 @@ import { asMember } from "@/lib/db";
 import { listModules } from "@/modules/organization/service";
 import { can } from "@/lib/server/context";
 import type { ModuleKey } from "@/lib/permissions/catalog";
+
+/**
+ * Espace client : jamais indexé (données d'organisation, aucun contenu public).
+ * `robots.txt` l'exclut déjà ; ce `noindex` évite qu'une URL partagée soit mise en cache par un
+ * moteur. Aucun impact sur l'application : la balise est lue par les robots, pas exécutée.
+ */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const context = await getAppContext();

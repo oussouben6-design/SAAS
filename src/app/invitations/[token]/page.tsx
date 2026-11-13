@@ -5,7 +5,10 @@ import { Alert } from "@/components/ui/misc";
 import { AcceptInvitationForm } from "./accept-form";
 import { formatDateTime } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Invitation" };
+export const metadata: Metadata = {
+  title: "Invitation",
+  robots: { index: false, follow: false },
+};
 
 export default async function InvitationPage({
   params,
