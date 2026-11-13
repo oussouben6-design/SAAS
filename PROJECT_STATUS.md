@@ -1,6 +1,15 @@
 # PROJECT STATUS — Excellence 360 CRM
 
-Dernière mise à jour : **12 novembre 2026** (branche `arena/fdc743cf-saas` : **modèle RPC réellement
+Dernière mise à jour : **13 novembre 2026** (branche `arena/6f7db3a1-saas` : **hébergement LWS sur
+sous-domaine cPanel** et **référencement** — kit `deploy/cpanel/` conçu pour **Phusion Passenger**
+(pas de root, ni PM2, ni reverse proxy) : fichier de démarrage `passenger.cjs`, vérification du
+sous-domaine, installateur, mise à jour, `.htaccess` du DocumentRoot, contrôle de santé local et
+contrôle HTTPS public, workflow `deploy-cpanel.yml`, guide `docs/lws.md` ; côté produit,
+`robots.txt` et `sitemap.xml` générés, canonique absolue, Open Graph/Twitter, JSON-LD
+`Organization` + `SoftwareApplication`, `noindex` sur l'espace client, 3 contrôles SEO ajoutés à
+`npm run smoke` et 8 tests unitaires).
+
+Dernière précédente : **12 novembre 2026** (branche `arena/fdc743cf-saas` : **modèle RPC réellement
 exécutable en production** —`0026_rpc_surface_enforcement.sql` rétablit l'`USAGE` du schéma `app` pour
 `authenticated` (sans lui, toute politique RLS échouait en `42501` sur les voies PostgREST/Realtime/RPC),
 supprime les `EXECUTE` hérités de PUBLIC que révoquer des rôles nommés ne retirait pas, et aligne
@@ -42,6 +51,8 @@ sont explicitement listés.
 | `npm run env:check` (préflight Netlify) | ✅ en cas d’échec, le log liste désormais chaque variable manquante, **où** la renseigner et **d’où** tirer sa valeur (`missing` / `recommended` dans `EnvCheckResult`), sans jamais imprimer de valeur. Le garde-fou reste bloquant : un build refusé vaut mieux qu’un site en ligne sans accès à sa base |
 | Sauvegarde / restauration | ✅ `db:backup --verifier` puis `db:restore` testés sur la base locale (empreintes, intégrité, volumétrie) |
 | Hébergement Netlify | ✅ Configuré et vérifié | `netlify.toml` (build `env:check && build`, Node 22, paquets natifs externes) ; refus explicite de PGlite/stockage local en serverless ; `npm run env:check` (règles testées, dont la configuration Google) ; `/api/maintenance` protégé par jeton (401/200 vérifiés) ; cron GitHub Actions (santé + purge) | Déploiement réel à effectuer par le propriétaire (compte Netlify) |
+| Hébergement LWS (sous-domaine cPanel) | ✅ Kit livré, **démarrage réellement testé** | **Passenger, pas de root** : `passenger.cjs` (racine) charge `.env.production`, prépare Next.js et se présente à Passenger via `listen('passenger')` — `next start`, `pm2` et un reverse proxy étant impossibles sur un compte cPanel ; `deploy/cpanel/` : `verify-subdomain.sh` (DocumentRoot, app hors du DocumentRoot, Node ≥ 20), `install-on-cpanel.sh` / `deploy.sh` (code → `npm ci` → `env:check` → **build obligatoire** → `tmp/restart.txt` → santé locale → contrôle HTTPS), `public_html.htaccess` (activation Passenger + `X-Forwarded-*` + cache immuable), `healthcheck.cjs` (démarre le serveur sur `127.0.0.1`, `/api/health` → **200, 26/26** vérifié ici), `check-remote.sh` (santé, robots, sitemap, canonique, source non téléchargeable), workflow `deploy-cpanel.yml` ; guide `docs/lws.md` | **À faire par le propriétaire** : plan **cPanel** LWS (le mutualisé LWS Panel n'exécute pas Node.js), sous-domaine, *Setup Node.js App* (startup file `passenger.cjs`), `.env.production` (Supabase pooler + Resend), secrets SSH `CPANEL_*` |
+| Référencement (SEO) | ✅ Vérifié en HTTP sur build de production | `robots.txt` (sitemap déclaré ; `/app`, `/api`, connexion, invitations, onboarding exclus), `sitemap.xml` (URL absolues), `canonical` **https** sur le domaine, `og:title`/`og:url`/`og:image` absolus, JSON-LD `Organization` + `SoftwareApplication`, `noindex` sur `/app` et les écrans d'authentification, `lang="fr"`, `metadataBase` depuis `NEXT_PUBLIC_SITE_URL` (repli `https://360crm.excellence-services-sarl.com`) | Search Console / Bing à valider par le propriétaire (jeton `GOOGLE_SITE_VERIFICATION` prévu) ; pages publiques supplémentaires à rédiger |
 | Hébergement Vercel | ✅ Support ajouté et vérifié en CI | Framework Next.js détecté automatiquement ; plateforme détectée via `VERCEL=1`/`VERCEL_ENV` ; **URL publique auto-résolue** (`VERCEL_PROJECT_PRODUCTION_URL` en production, `VERCEL_URL` en preview) sans variable dupliquée ; garde-fou serverless identique à Netlify (PGlite/stockage local refusés) ; limite de téléversement signalée dès 4,5 Mo (`MAX_UPLOAD_BYTES=4194304`) ; **préflight Vercel factice dans la CI** ; guide `docs/vercel.md` | **Déploiement réel à effectuer par le propriétaire (compte Vercel)** — seuls les préflights factices sont testés ici |
 | Supervision / vérification | ✅ `GET /api/health` (200, 25/25 migrations) et `npm run smoke` : **20/20 contrôles HTTP réussis** (connexion TOTP→OTP réelle, jeton injecté) |
 | CI GitHub Actions | ✅ **verte sur `main`** après fusion de la PR #6 (run `42422750335` : types, lint, 148 tests, préflight Netlify, **audit de schéma**, build). Les six étapes passent ; `npm run test:e2e` (Playwright) n’est pas à la CI |
@@ -91,12 +102,13 @@ Légende : ✅ vérifié · 🟡 partiel · 🚧 non utilisable (marqué comme t
 ```
 npx tsc --noEmit        → 0 erreur
 npm run lint            → 0 erreur, 0 avertissement
-npm test                → Test Files 23 passed (23) · Tests 166 passed (166) · ~85 s
+npm test                → Test Files 24 passed (24) · Tests 174 passed (174) · ~79 s
 npm run build           → succès (build de production vérifié sur la branche, 11 nov. 2026)
 Netlify (simulation)     → env:check + build OK avec valeurs factices, sans connexion externe
 npm run env:check (simulation Netlify) → 0 erreur avec les secrets factices ; 4 erreurs,
 chacune suivie du lieu de saisie et de la source de la valeur, dès qu’un secret manque
-npm run smoke -- --token … → 20/20 contrôles (17 pages + 2 publiques + /api/health)
+npm run smoke -- --token … → 23/23 contrôles (17 pages métier + 2 publiques + /api/health
++ robots.txt + sitemap.xml + balises de l'accueil)
 npm run db:backup -- --verifier → empreintes OK, 49 tables, 133 politiques RLS (base de dev, avant 0024)
 npm run db:restore ...  → base restaurée depuis une sauvegarde vérifiée (1228 empreintes), 6 profils
 npm run db:migrate      → 26/26 migrations, 50 tables, 134 politiques RLS
@@ -107,6 +119,7 @@ jeton obtenu via le flux OTP réel
 
 | Fichier | Couverture |
 | --- | --- |
+| `tests/unit/seo.test.ts` | **Référencement** : URL publique (repli sur le domaine de production, priorité `NEXT_PUBLIC_SITE_URL`, slashs, schéma), exclusion de `/app` `/api` connexion invitations, sitemap en URL absolues, JSON-LD en URL absolues |
 | `tests/unit/permissions.test.ts` | 6 rôles, propriétaire = total du catalogue, lecteur en lecture seule |
 | `tests/unit/validation.test.ts` | Schémas Zod partagés, montants en unité mineure (XOF/EUR) |
 | `tests/unit/components.test.tsx` | Design system (RTL + jsdom) |

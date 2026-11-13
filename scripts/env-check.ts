@@ -24,7 +24,9 @@ const WHERE: Record<Platform, string> = {
   lambda: "Dans la configuration de la fonction (Variables d'environnement) ; les couches partagées ne " +
     "sont visibles du build que si elles y sont rattachées.",
   node:
-    "Dans /etc/organix-crm.env (ou l'EnvironmentFile de l'unité systemd), puis ./scripts/deploy.sh. " +
+    "Sur cPanel LWS : dans .env.production à la racine de l'application " +
+    "(cp deploy/cpanel/env.production.example .env.production, puis chmod 600), suivi de " +
+    "« touch tmp/restart.txt » et d'un build. Sur un serveur dédié : /etc/organix-crm.env. " +
     "En local : .env.local, lu par npm run env:check et par next dev.",
 };
 
@@ -32,15 +34,16 @@ const WHERE: Record<Platform, string> = {
 const HOW: Record<string, string> = {
   DATABASE_URL:
     "Supabase → Project Settings → Database → Connection string → « Session pooler », port 6543. " +
-    "Le port 5432 et l'hôte db.<réf>.supabase.co sont en IPv6 : injoignables depuis une plateforme serverless.",
+    "Le port 5432 et l'hôte db.<réf>.supabase.co sont en IPv6 : injoignables depuis une plateforme " +
+    "serverless et depuis la plupart des hébergements mutualisés (cPanel LWS inclus).",
   SUPABASE_URL: "Supabase → Project Settings → API → Project URL (https://<réf>.supabase.co).",
   SUPABASE_SERVICE_ROLE_KEY:
     "Supabase → Project Settings → API → « secret key » (service_role, JWT en eyJ…). La clé anon ne " +
     "suffit pas : le build passerait et les téléversements échoueraient au premier appel. Sans préfixe " +
     "NEXT_PUBLIC_, qui l'exposerait au navigateur.",
   APP_URL:
-    "Facultatif sur Vercel et Netlify : le domaine de production (Vercel : VERCEL_PROJECT_PRODUCTION_URL, " +
-    "Netlify : URL / DEPLOY_PRIME_URL) est utilisé automatiquement. À définir seulement pour un domaine personnalisé.",
+    "Obligatoire sur cPanel LWS et sur tout serveur Node : https://<votre-sous-domaine>, sans slash final. " +
+    "Facultatif sur Vercel et Netlify, où l'URL du déploiement est résolue automatiquement.",
   RESEND_API_KEY: "resend.com → API Keys, avec MAIL_FROM = expéditeur vérifié sur le domaine.",
   MFA_ENCRYPTION_KEY: "Générez-le localement : openssl rand -base64 32.",
   MAINTENANCE_SECRET: "Générez-le localement : openssl rand -hex 32.",
@@ -81,7 +84,8 @@ if (result.errors.length > 0) {
   }
   console.info(
     "\n[excellence360:env] Aucun secret ne doit transiter par le dépôt ni par les journaux : " +
-      "les valeurs se saisissent sur la cible. Détail complet : docs/netlify.md.",
+      "les valeurs se saisissent sur la cible. Détail complet : docs/configuration.md " +
+      "(cPanel LWS : docs/lws.md ; Netlify : docs/netlify.md).",
   );
   process.exitCode = 1;
 } else {

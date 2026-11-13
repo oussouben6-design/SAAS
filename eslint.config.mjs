@@ -23,6 +23,15 @@ const eslintConfig = [
     ],
   },
   {
+    // Scripts CommonJS exécutés par le serveur (Passenger exige un fichier .js/.cjs) :
+    // `require` y est la seule forme d'import possible, comme dans next.config.ts compilé.
+    files: ["**/*.cjs"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-var-requires": "off",
+    },
+  },
+  {
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",

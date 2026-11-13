@@ -1,0 +1,131 @@
+# Déploiement automatique sur cPanel LWS (sous-domaine, Phusion Passenger)
+#
+# Après une CI verte sur `main`, le workflow se connecte en SSH au compte cPanel et
+# rejoue `deploy/cpanel/deploy.sh` (code → dépendances → env:check → build → reload
+# Passenger → santé), puis contrôle le site en HTTPS depuis GitHub.
+#
+# Secrets (Settings → Secrets and variables → Actions) :
+#   CPANEL_SSH_HOST     hôte SSH du compte cPanel (IP du serveur, pas le sous-domaine)
+#   CPANEL_SSH_USER     identifiant cPanel
+#   CPANEL_SSH_PORT     port SSH (souvent 22 ; LWS peut fournir un port dédié)
+#   CPANEL_SSH_KEY      clé privée dédiée (cPanel → Clés SSH) — jamais de mot de passe
+#   CPANEL_APP_DIR      /home/<compte>/apps/excellence360
+#   CPANEL_SITE_URL     https://360crm.excellence-services-sarl.com
+#
+# Aucun secret n'est écrit dans le dépôt ni affiché dans les journaux.
+name: Déploiement cPanel LWS
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branche à déployer
+        required: false
+        default: main
+      skip_deploy:
+        description: Contrôler le site sans redéployer
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: deploy-cpanel
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Mise à jour sur cPanel
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+
+    steps:
+      - name: Vérifier la présence des secrets
+        env:
+          HOST: ${{ secrets.CPANEL_SSH_HOST }}
+          USER_NAME: ${{ secrets.CPANEL_SSH_USER }}
+          KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          APP_DIR: ${{ secrets.CPANEL_APP_DIR }}
+        run: |
+          missing=0
+          for name in HOST USER_NAME KEY APP_DIR; do
+            if [ -z "${!name}" ]; then echo "::error::Secret $name absent (voir l'en-tête du workflow)"; missing=1; fi
+          done
+          exit "$missing"
+
+      - name: Préparer la clé SSH
+        env:
+          KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          HOST: ${{ secrets.CPANEL_SSH_HOST }}
+          PORT: ${{ secrets.CPANEL_SSH_PORT }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "${PORT:-22}" -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Déployer (SSH → deploy/cpanel/deploy.sh)
+        if: ${{ github.event.inputs.skip_deploy != 'true' }}
+        env:
+          HOST: ${{ secrets.CPANEL_SSH_HOST }}
+          USER_NAME: ${{ secrets.CPANEL_SSH_USER }}
+          PORT: ${{ secrets.CPANEL_SSH_PORT }}
+          APP_DIR: ${{ secrets.CPANEL_APP_DIR }}
+          BRANCH: ${{ github.event.inputs.branch || 'main' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes -o BatchMode=yes -p "${PORT:-22}" \
+            "${USER_NAME}@${HOST}" \
+            "APP_BRANCH='${BRANCH}' bash '${APP_DIR}/deploy/cpanel/deploy.sh'"
+
+      - name: Contrôles publics (santé, référencement, source protégée)
+        env:
+          SITE: ${{ secrets.CPANEL_SITE_URL }}
+        run: |
+          set -euo pipefail
+          SITE="${SITE:-https://360crm.excellence-services-sarl.com}"
+          BASE="${SITE%/}"
+
+          echo "— disponibilité"
+          curl -fsS --max-time 30 "$BASE/api/health" | tee health.json
+          grep -q '"status":"ok"' health.json
+
+          echo "— accueil (page Apache ? balises ?)"
+          curl -fsS --max-time 30 "$BASE/" > home.html
+          if grep -qiE 'Index of /|Apache2 Debian Default Page|It works!' home.html; then
+            echo "::error::Le site renvoie une page Apache : Passenger n'est pas actif (voir docs/lws.md § 6)"
+            exit 1
+          fi
+          grep -q 'rel="canonical"' home.html || { echo "::error::balise canonique absente"; exit 1; }
+          grep -q 'property="og:title"' home.html || { echo "::error::Open Graph absent"; exit 1; }
+          if grep -qi 'canonical" href="https\?://localhost' home.html; then
+            echo "::error::URL canonique en localhost : NEXT_PUBLIC_SITE_URL mal réglée"; exit 1
+          fi
+          if grep -qi '<meta[^>]+name="robots"[^>]+content="[^"]*noindex' home.html; then
+            echo "::error::la page d'accueil est en noindex"; exit 1
+          fi
+
+          echo "— robots.txt et sitemap.xml"
+          curl -fsS --max-time 30 "$BASE/robots.txt" | tee robots.txt | grep -qi 'sitemap:' || {
+            echo "::error::robots.txt ne déclare pas le sitemap"; exit 1; }
+          curl -fsS --max-time 30 "$BASE/sitemap.xml" | tee sitemap.xml | grep -q '<urlset' || {
+            echo "::error::sitemap.xml invalide"; exit 1; }
+
+          echo "— code source non téléchargeable"
+          for path in /.env.production /package.json /passenger.cjs; do
+            status="$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$BASE$path")"
+            if [ "$status" = "200" ]; then
+              echo "::error::$path est téléchargeable (HTTP 200) : application dans le DocumentRoot"; exit 1
+            fi
+          done
+
+          echo "Contrôles publics réussis."

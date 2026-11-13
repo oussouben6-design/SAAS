@@ -8,6 +8,15 @@
 Étapes détaillées dans [`docs/netlify.md`](netlify.md) : `netlify.toml` est déjà présent, la base et
 les fichiers doivent être sur Supabase (serverless : ni PGlite, ni stockage local).
 
+## cPanel LWS (sous-domaine)
+
+Étapes détaillées dans [`docs/lws.md`](lws.md). Ce n'est **pas** un serveur dédié : Node.js tourne
+sous **Phusion Passenger**, sans root, sans PM2 et sans reverse proxy. Le fichier de démarrage est
+`passenger.cjs` (à indiquer dans *cPanel → Setup Node.js App*), le DocumentRoot ne contient que le
+`.htaccess` de `deploy/cpanel/`, et le code vit hors de ce dossier. Le build reste nécessaire avant
+chaque redémarrage : `deploy/cpanel/deploy.sh` enchaîne code, dépendances, `env:check`, build,
+relance et contrôle de santé.
+
 ## Option A — Hébergeur Node (Vercel, Render, Railway, VPS)
 
 **Contraintes du code actuel** :
