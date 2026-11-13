@@ -74,6 +74,41 @@ async function main() {
     `${healthOk ? "✓" : "✗"} ${health.status} /api/health — ${healthBody.status ?? "?"} (${healthBody.driver ?? "?"}, ${healthBody.migrations?.applied ?? "?"}/${healthBody.migrations?.available ?? "?"} migrations)`,
   );
   if (!healthOk) failures.push(`/api/health → ${health.status} ${JSON.stringify(healthBody)}`);
+
+  // ---------------------------------------------------------------- référencement (SEO)
+  // Ces trois contrôles valident ce que voient Google et les aperçus de partage : sans eux, une
+  // balise `noindex` héritée ou une URL canonique en `localhost` passeraient inaperçues.
+  const robots = await fetch(`${BASE_URL}/robots.txt`);
+  const robotsBody = await robots.text();
+  checked += 1;
+  const robotsOk =
+    robots.status === 200 &&
+    /sitemap:\s*https?:\/\//i.test(robotsBody) &&
+    /disallow:\s*\/app/i.test(robotsBody);
+  console.info(`${robotsOk ? "✓" : "✗"} ${robots.status} /robots.txt (sitemap déclaré, /app exclu)`);
+  if (!robotsOk) failures.push(`/robots.txt → ${robots.status} : sitemap ou exclusion de /app absents`);
+
+  const sitemap = await fetch(`${BASE_URL}/sitemap.xml`);
+  const sitemapBody = await sitemap.text();
+  checked += 1;
+  const sitemapOk = sitemap.status === 200 && /<urlset/i.test(sitemapBody) && /<loc>https?:\/\//i.test(sitemapBody);
+  console.info(`${sitemapOk ? "✓" : "✗"} ${sitemap.status} /sitemap.xml (URL absolues)`);
+  if (!sitemapOk) failures.push(`/sitemap.xml → ${sitemap.status} : urlset ou URL absolue absent`);
+
+  const home = await fetch(`${BASE_URL}/`);
+  const homeHtml = await home.text();
+  checked += 1;
+  const canonicalMatch = homeHtml.match(/<link[^>]+rel="canonical"[^>]*>/i);
+  const canonicalHref = canonicalMatch?.[0]?.match(/href="([^"]+)"/i)?.[1] ?? "";
+  const seoOk =
+    /property="og:title"/i.test(homeHtml) &&
+    /property="og:image"/i.test(homeHtml) &&
+    canonicalMatch !== null &&
+    !/localhost|127\.0\.0\.1/i.test(canonicalHref) &&
+    !/<meta[^>]+name="robots"[^>]+content="[^"]*noindex/i.test(homeHtml);
+  console.info(`${seoOk ? "✓" : "✗"} ${home.status} / (canonique ${canonicalHref || "absente"}, Open Graph, indexable)`);
+  if (!seoOk) failures.push(`/ → balise canonique « ${canonicalHref || "absente"} » ou Open Graph manquant, ou noindex`);
+
   let token = TOKEN;
   if (!token) {
     let login = await authenticate({ email: EMAIL, password: PASSWORD, ip: "smoke", userAgent: "organix-smoke" });

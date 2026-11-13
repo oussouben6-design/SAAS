@@ -1,0 +1,39 @@
+# =====================================================================
+# Variante .htaccess — à utiliser UNIQUEMENT si vous ne pouvez pas éditer le
+# VirtualHost (certaines offres LWS « Cloud » gardent Apache avec un .htaccess
+# actif et un proxy autorisé).
+#
+# Emplacement : racine du site, c'est-à-dire le DocumentRoot du sous-domaine
+#               360crm.excellence-services-sarl.com (souvent htdocs/ ou public_html/)
+#
+# ⚠️ À réserver aux offres où Apache autorise `RewriteRule ... [P]` : sur un
+# hébergement mutualisé standard, Next.js ne peut PAS tourner (pas de Node.js).
+# Voir docs/lws.md § 1.
+# =====================================================================
+
+Options +FollowSymLinks -Indexes -MultiViews
+DirectoryIndex disabled
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Toujours en HTTPS.
+    RewriteCond %{HTTPS} off
+    RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Tout le trafic applicatif est servi par Next.js sur le port local 3000.
+    RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L,QSA]
+
+    # Conserver l'hôte et le protocole d'origine (liens absolus, OAuth, cookies).
+    RequestHeader set X-Forwarded-Proto "https"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-Forwarded-Proto "https"
+</IfModule>
+
+# Fichiers de configuration jamais servis.
+<FilesMatch "^\.env|^\.git|^(package|package-lock|tsconfig)\.json$">
+    Require all denied
+</FilesMatch>

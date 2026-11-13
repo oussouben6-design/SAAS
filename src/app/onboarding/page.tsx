@@ -5,7 +5,10 @@ import { OnboardingForm } from "./onboarding-form";
 import { BrandLogo } from "@/components/layout/auth-shell";
 import { logoutAction } from "../(auth)/actions";
 
-export const metadata: Metadata = { title: "Créer votre organisation" };
+export const metadata: Metadata = {
+  title: "Créer votre organisation",
+  robots: { index: false, follow: false },
+};
 
 export default async function OnboardingPage() {
   const user = await requireUser();

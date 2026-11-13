@@ -57,7 +57,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | `npm run db:backup` | Sauvegarde vérifiable (copie + manifeste + empreintes ; `--verifier` ouvre la copie) |
 | `npm run db:restore` | Restauration contrôlée (`--depuis <dossier> --yes --force`) |
 | `npm run db:maintenance` | Purge des sessions/jetons expirés (cron quotidien) |
-| `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` (`--otp-code` si le code de connexion est exigé) |
+| `npm run smoke` | Vérification post-déploiement : connexion + 17 pages clés + `/api/health` + `robots.txt`/`sitemap.xml`/balises (**23 contrôles**) (`--otp-code` si le code de connexion est exigé) |
 | `npm run env:check` | Valide la configuration avant déploiement (Vercel / Netlify, Supabase, secrets) ; code 1 si bloquant |
 | `npm run db:reset` | Supprime la base locale et le stockage local (`-- --yes` obligatoire) |
 
@@ -76,6 +76,10 @@ démonstration et aucun jeu de données fictif n'y est injecté.
   bucket privé Supabase Storage) choisis par variable d'environnement, sans dépendance à un SDK.
 - **Décisions documentées** : suppression logique et RLS (`docs/securite.md`), périmètre RH sans
   paie, finances non certifiées. Les écrans rappellent ces limites.
+- **Référencement** : domaine public unique (`src/lib/seo.ts`), `robots.txt` et `sitemap.xml`
+  générés, canonique absolue, Open Graph et données structurées ; l'espace client est en
+  `noindex`. L'hébergement LWS est décrit dans [`docs/lws.md`](docs/lws.md), avec les fichiers
+  serveur prêts à l'emploi dans `deploy/lws/`.
 
 ## Documentation
 
@@ -93,6 +97,7 @@ démonstration et aucun jeu de données fictif n'y est injecté.
 | [`docs/vercel.md`](docs/vercel.md) | **Déploiement Vercel** : import, variables, domaine, limites serverless, cron de maintenance |
 | [`docs/mettre-en-ligne.md`](docs/mettre-en-ligne.md) | **Mise en ligne guidée** : checklist unique Vercel/Netlify, mode personnel (sans compte), diagnostic « mises à jour non visibles » |
 | [`docs/netlify.md`](docs/netlify.md) | **Déploiement Netlify** : variables, limites serverless, domaine, cron de maintenance |
+| [`docs/lws.md`](docs/lws.md) | **Hébergement LWS** (`360crm.excellence-services-sarl.com`) : DNS, Cloud KVM, Apache + PM2, HTTPS, déploiement continu — et **référencement** (robots, sitemap, canonique, Search Console) |
 | [`docs/deploiement.md`](docs/deploiement.md) | Mise en production, domaine, sauvegardes |
 | [`docs/sauvegarde-restauration.md`](docs/sauvegarde-restauration.md) | Sauvegarde et restauration vérifiables (script testé) |
 | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | État module par module, tests exécutés, limites |

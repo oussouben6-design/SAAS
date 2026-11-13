@@ -1,0 +1,117 @@
+# =====================================================================
+# Déploiement automatique sur LWS (Cloud KVM / VPS) — 360crm.excellence-services-sarl.com
+#
+# Déclenchement :
+#   - automatiquement après une CI **verte** sur `main` (workflow_run) ;
+#   - manuellement (Actions → « Déploiement LWS » → Run workflow), avec possibilité de ne pas
+#     reconstruire (`skip_build`) ou de déployer une autre branche (`branch`).
+#
+# Secrets à créer dans Settings → Secrets and variables → Actions :
+#   LWS_SSH_HOST   IP ou nom d'hôte du serveur
+#   LWS_SSH_USER   excellence360
+#   LWS_SSH_KEY    clé privée dédiée au déploiement (ed25519, sans phrase secrète)
+#   LWS_APP_DIR    /var/www/excellence360          (facultatif, valeur par défaut)
+#   LWS_SITE_URL   https://360crm.excellence-services-sarl.com  (facultatif)
+#
+# Aucun secret n'est écrit dans le dépôt ni affiché dans les journaux.
+# =====================================================================
+name: Déploiement LWS
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branche à déployer
+        required: false
+        default: main
+      skip_pull:
+        description: Ne pas toucher au dépôt (code déjà copié sur le serveur)
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: deploy-lws
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Déploiement sur le serveur LWS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Ne jamais déployer une CI rouge (sauf déclenchement manuel explicite).
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main')
+
+    steps:
+      - name: Vérifier la présence des secrets
+        env:
+          HOST: ${{ secrets.LWS_SSH_HOST }}
+          USER_NAME: ${{ secrets.LWS_SSH_USER }}
+          KEY: ${{ secrets.LWS_SSH_KEY }}
+        run: |
+          missing=0
+          for name in HOST USER_NAME KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Secret $name absent"; missing=1; fi
+          done
+          [ "$missing" = "0" ] || { echo "Renseignez les secrets LWS_SSH_* (voir l'en-tête du workflow)."; exit 1; }
+
+      - name: Préparer la clé SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.LWS_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # Empreinte épinglée : évite d'accepter silencieusement un autre serveur.
+          ssh-keyscan -H "${{ secrets.LWS_SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Déployer (git pull, npm ci, build, PM2, /api/health)
+        env:
+          HOST: ${{ secrets.LWS_SSH_HOST }}
+          USER_NAME: ${{ secrets.LWS_SSH_USER }}
+          APP_DIR: ${{ secrets.LWS_APP_DIR }}
+          BRANCH: ${{ github.event.inputs.branch || 'main' }}
+          SKIP_PULL: ${{ github.event.inputs.skip_pull == 'true' && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          APP_DIR="${APP_DIR:-/var/www/excellence360}"
+          ssh -i ~/.ssh/id_deploy -o IdentitiesOnly=yes \
+            "${USER_NAME}@${HOST}" \
+            "BRANCH='${BRANCH}' SKIP_PULL='${SKIP_PULL}' bash '${APP_DIR}/deploy/lws/deploy.sh'"
+
+      - name: Contrôles publics après déploiement (référencement inclus)
+        env:
+          SITE: ${{ secrets.LWS_SITE_URL || 'https://360crm.excellence-services-sarl.com' }}
+        run: |
+          set -euo pipefail
+          echo "— disponibilité"
+          curl -fsS --max-time 30 "$SITE/api/health" | tee health.json
+          grep -q '"status":"ok"' health.json
+
+          echo "— robots.txt"
+          curl -fsS --max-time 30 "$SITE/robots.txt" | tee robots.txt
+          grep -qi 'sitemap:' robots.txt || { echo "::error::robots.txt ne déclare pas le sitemap"; exit 1; }
+          grep -qi 'disallow: /app' robots.txt || { echo "::error::robots.txt n'exclut pas /app"; exit 1; }
+
+          echo "— sitemap.xml"
+          curl -fsS --max-time 30 "$SITE/sitemap.xml" | tee sitemap.xml
+          grep -q '<urlset' sitemap.xml || { echo "::error::sitemap.xml invalide"; exit 1; }
+
+          echo "— page d'accueil (canonique + Open Graph)"
+          curl -fsS --max-time 30 "$SITE/" > home.html
+          grep -q 'rel="canonical"' home.html || { echo "::error::balise canonique absente"; exit 1; }
+          grep -q 'property="og:title"' home.html || { echo "::error::Open Graph absent"; exit 1; }
+          if grep -qi 'content="[^"]*noindex' home.html; then
+            echo "::error::la page d'accueil est en noindex — elle ne sera pas référencée"; exit 1
+          fi
+          if grep -qi 'canonical" href="http://localhost' home.html; then
+            echo "::error::URL canonique en localhost : NEXT_PUBLIC_SITE_URL est mal réglée"; exit 1
+          fi
+          echo "Contrôles publics réussis."
